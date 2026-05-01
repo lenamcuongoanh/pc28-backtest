@@ -77,6 +77,15 @@ h3 { font-size: 16px; margin-bottom: 12px; color: #e7e9ea; }
 }
 .hl-pocket { color: #4caf50; font-weight: 600; }
 .hl-reserve { color: #ff9800; font-weight: 600; }
+.strategy-detail-note {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: #1d2025;
+  border-radius: 8px;
+  color: #8b98a5;
+  font-size: 13px;
+  border-left: 3px solid #4caf50;
+}
 
 /* 统计卡片 */
 .stats-card {

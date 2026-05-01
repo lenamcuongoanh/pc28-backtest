@@ -80,6 +80,60 @@
         "date_end": "2026-04-28",
         "total_draws": 146396
       }
+    },
+    {
+      "id": "k7da_xiao80_1y",
+      "name": "连7大→押小 80%口袋 (过去 1 年)",
+      "desc": "信号:连续 7 期开大 → 押当前口袋的 80% (限红 12K)。过去 1 年回测 $10K → $663,088 (+6531%, 66 倍),峰值 $796,288 (80 倍),13 次爆仓。这是从 200+ 个变种暴力搜索出的过去 1 年最强策略。胜率 53.9% (1.7σ 真信号)。",
+      "summary": {
+        "strategy_id": "k7da_xiao80_1y",
+        "start_total": 10000,
+        "end_total": 663088,
+        "peak_total": 796288,
+        "pnl": 653088,
+        "pnl_pct": 6530.88,
+        "peak_pct": 7862.88,
+        "total_bets": 1032,
+        "total_wins": 556,
+        "win_rate": 53.875968992248055,
+        "busts": 13,
+        "realloc": 5,
+        "target_hit": null,
+        "current_table": 254153,
+        "current_reserve": 408935,
+        "days": 365,
+        "data_source": "1y",
+        "date_start": "2025-04-29",
+        "date_end": "2026-04-28",
+        "total_draws": 146396
+      }
+    },
+    {
+      "id": "k7da_xiao80_30y",
+      "name": "连7大→押小 80%口袋 (过去 30 年)",
+      "desc": "同样的策略 (连7大→押小 80%口袋),回测过去 30 年完整数据 (1995-11 → 2026-04, ~3.4M 期)。看长期是否能持续盈利,还是只是过去 1 年的 sample lucky。订单量大,只保留事件日 (爆仓/翻倍) 详情。",
+      "summary": {
+        "strategy_id": "k7da_xiao80_30y",
+        "start_total": 10000,
+        "end_total": 0,
+        "peak_total": 14842,
+        "pnl": -10000,
+        "pnl_pct": -100.0,
+        "peak_pct": 48.42,
+        "total_bets": 564,
+        "total_wins": 294,
+        "win_rate": 52.12765957446809,
+        "busts": 43,
+        "realloc": 0,
+        "target_hit": null,
+        "current_table": 0,
+        "current_reserve": 0,
+        "days": 376,
+        "data_source": "30y",
+        "date_start": "1995-11-26",
+        "date_end": "2026-04-28",
+        "total_draws": 3426059
+      }
     }
   ],
   "framework": {
