@@ -109,9 +109,36 @@
       }
     },
     {
+      "id": "k7da_xiao80_10y",
+      "name": "连7大→押小 80%口袋 (过去 10 年)",
+      "desc": "同样的策略 (连7大→押小 80%口袋),回测过去 10 年 (2016-04-29 → 2026-04-28, ~1.4M 期)。看 10 年级别是否依然能赚或破产。",
+      "summary": {
+        "strategy_id": "k7da_xiao80_10y",
+        "start_total": 10000,
+        "end_total": 0,
+        "peak_total": 23438,
+        "pnl": -10000,
+        "pnl_pct": -100.0,
+        "peak_pct": 134.38000000000002,
+        "total_bets": 609,
+        "total_wins": 294,
+        "win_rate": 48.275862068965516,
+        "busts": 55,
+        "realloc": 1,
+        "target_hit": null,
+        "current_table": 0,
+        "current_reserve": 0,
+        "days": 187,
+        "data_source": "10y",
+        "date_start": "2016-04-29",
+        "date_end": "2026-04-28",
+        "total_draws": 1434916
+      }
+    },
+    {
       "id": "k7da_xiao80_30y",
       "name": "连7大→押小 80%口袋 (过去 30 年)",
-      "desc": "同样的策略 (连7大→押小 80%口袋),回测过去 30 年完整数据 (1995-11 → 2026-04, ~3.4M 期)。看长期是否能持续盈利,还是只是过去 1 年的 sample lucky。订单量大,只保留事件日 (爆仓/翻倍) 详情。",
+      "desc": "同样的策略 (连7大→押小 80%口袋),回测过去 30 年完整数据 (1995-11 → 2026-04, ~3.4M 期)。看长期是否能持续盈利,还是只是过去 1 年的 sample lucky。",
       "summary": {
         "strategy_id": "k7da_xiao80_30y",
         "start_total": 10000,
