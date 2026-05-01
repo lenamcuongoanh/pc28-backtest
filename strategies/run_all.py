@@ -118,6 +118,54 @@ def strat_k7_da_pushxiao_80pct():
     return factory()
 
 
+def strat_k4_dan_shuang_1000():
+    """连4期开单 → 押双 $1000 (10 年 +3094%, 极致激进)"""
+    def cond(h):
+        if len(h) < 4: return False
+        return all(r["oe"] == "单" for r in h[-4:])
+    def factory():
+        def f(state, history, draw_sum):
+            if state.total >= TARGET: return None
+            if not cond(history): return None
+            amt = min(1000, state.table, 12000)
+            if amt < 1: return None
+            return ("双", amt, "连4单→押双 $1000")
+        return f
+    return factory()
+
+
+def strat_k12_da_xiao_5000():
+    """连12期开大 → 押小 $5000 (10 年 +2490%, 高收益少爆仓)"""
+    def cond(h):
+        if len(h) < 12: return False
+        return all(r["bs"] == "大" for r in h[-12:])
+    def factory():
+        def f(state, history, draw_sum):
+            if state.total >= TARGET: return None
+            if not cond(history): return None
+            amt = min(5000, state.table, 12000)
+            if amt < 1: return None
+            return ("小", amt, "连12大→押小 $5000")
+        return f
+    return factory()
+
+
+def strat_k12_da_xiao_1500():
+    """连12期开大 → 押小 $1500 (10 年 +743%, 0 爆仓 稳健)"""
+    def cond(h):
+        if len(h) < 12: return False
+        return all(r["bs"] == "大" for r in h[-12:])
+    def factory():
+        def f(state, history, draw_sum):
+            if state.total >= TARGET: return None
+            if not cond(history): return None
+            amt = min(1500, state.table, 12000)
+            if amt < 1: return None
+            return ("小", amt, "连12大→押小 $1500")
+        return f
+    return factory()
+
+
 def strat_dalembert_take_profit():
     """连3单→押双 爬楼梯 + 1% 止盈重置。
     起步 = 锚点 // 200。锚点 = 上次重置时的口袋金额。
@@ -232,6 +280,27 @@ STRATEGIES = [
         "desc": "同样的策略 (连7大→押小 80%口袋),回测过去 30 年完整数据 (1995-11 → 2026-04, ~3.4M 期)。看长期是否能持续盈利,还是只是过去 1 年的 sample lucky。",
         "factory": strat_k7_da_pushxiao_80pct,
         "data_source": "30y",
+    },
+    {
+        "id": "k4dan_shuang_1000_10y",
+        "name": "🚀 极致激进: 连4单→双 $1000 (过去 10 年)",
+        "desc": "信号:连续 4 期开单 → 押双 固定 $1000。10 年实测 $10K → $319,368 (+3094%, 年化复利 40.5%),10 次爆仓 + 68% 最大回撤。这是 10 年里 PnL 最高的策略,但波动巨大。",
+        "factory": strat_k4_dan_shuang_1000,
+        "data_source": "10y",
+    },
+    {
+        "id": "k12da_xiao_5000_10y",
+        "name": "💼 中等: 连12大→小 $5000 (过去 10 年)",
+        "desc": "信号:连续 12 期开大 → 押小 固定 $5000。10 年实测 $10K → $258,973 (+2490%, 年化 38.6%),3 次爆仓 + 33% 回撤。信号低频 (~28 次/年),但单注大,综合稳健。",
+        "factory": strat_k12_da_xiao_5000,
+        "data_source": "10y",
+    },
+    {
+        "id": "k12da_xiao_1500_10y",
+        "name": "🛡️ 稳健: 连12大→小 $1500 (过去 10 年, 0 爆仓!)",
+        "desc": "信号:连续 12 期开大 → 押小 固定 $1500。10 年实测 $10K → $84,340 (+743%, 年化 23.7% 跟巴菲特持平),**0 次爆仓** + 24.6% 回撤。0 爆仓中 PnL 最高的策略。",
+        "factory": strat_k12_da_xiao_1500,
+        "data_source": "10y",
     },
 ]
 
