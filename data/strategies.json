@@ -53,6 +53,33 @@
         "date_end": "2026-04-28",
         "total_draws": 1434916
       }
+    },
+    {
+      "id": "dalembert_tp_1y",
+      "name": "连3单押双 爬楼梯+1%止盈 (过去 1 年)",
+      "desc": "同样的信号 (连 3 单押双) 和爬楼梯下注,但加入 1% 止盈重置:口袋从锚点涨够 1% (≥锚点×1.01) → 立刻回到第 1 级,锚点更新为当前口袋,起步按新锚点÷200 重算。频繁锁小利润避免吐回去。回测过去 1 年。",
+      "summary": {
+        "strategy_id": "dalembert_tp_1y",
+        "start_total": 10000,
+        "end_total": 443,
+        "peak_total": 20000,
+        "pnl": -9557,
+        "pnl_pct": -95.57,
+        "peak_pct": 100.0,
+        "total_bets": 18204,
+        "total_wins": 9137,
+        "win_rate": 50.19226543616787,
+        "busts": 21,
+        "realloc": 1,
+        "target_hit": null,
+        "current_table": 153,
+        "current_reserve": 290,
+        "days": 365,
+        "data_source": "1y",
+        "date_start": "2025-04-29",
+        "date_end": "2026-04-28",
+        "total_draws": 146396
+      }
     }
   ],
   "framework": {

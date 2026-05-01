@@ -102,6 +102,45 @@ def strat_dalembert():
     return f
 
 
+def strat_dalembert_take_profit():
+    """连3单→押双 爬楼梯 + 1% 止盈重置。
+    起步 = 锚点 // 200。锚点 = 上次重置时的口袋金额。
+    口袋 ≥ 锚点 × 1.01 → 重置 (锚点更新为当前口袋,起步按新锚点重算,level 回 1)。
+    """
+    cond = streak_oe(3, "单")
+    state_track = {"level": 1, "anchor": None, "unit": None}
+
+    def reset_round(current_pocket):
+        state_track["anchor"] = current_pocket
+        state_track["unit"] = max(1, current_pocket // 200)
+        state_track["level"] = 1
+
+    def f(state, history, draw_sum):
+        if state.total >= TARGET: return None
+        if not cond(history): return None
+        # 首次 / bust / realloc 后初始化
+        if state_track["anchor"] is None:
+            reset_round(state.table)
+        # 1% 止盈检查
+        if state.table >= state_track["anchor"] * 1.01:
+            reset_round(state.table)
+        amt = state_track["unit"] * state_track["level"]
+        amt = max(1, min(amt, state.table, 12000))
+        return ("双", amt, "连3单→押双 爬楼梯+1%止盈")
+
+    def update(won):
+        state_track["level"] = max(1, state_track["level"] - 1) if won else state_track["level"] + 1
+
+    def reset():
+        state_track["anchor"] = None
+        state_track["unit"] = None
+        state_track["level"] = 1
+
+    f.update = update
+    f.reset = reset
+    return f
+
+
 def strat_moonshot():
     """连3同色 → 反向全押 + 达 $1M 停手"""
     cond = or_cond(streak_oe(3, "单"), streak_oe(3, "双"), streak_bs(3, "大"), streak_bs(3, "小"))
@@ -149,6 +188,13 @@ STRATEGIES = [
         "desc": "同样的策略,回测过去 10 年 (2016-04-29 → 2026-04-28, ~1.46M 期)。10 年订单太多,只保留爆仓/翻倍当天的逐笔订单,其他日子显示当日聚合统计。",
         "factory": strat_dalembert,
         "data_source": "10y",
+    },
+    {
+        "id": "dalembert_tp_1y",
+        "name": "连3单押双 爬楼梯+1%止盈 (过去 1 年)",
+        "desc": "同样的信号 (连 3 单押双) 和爬楼梯下注,但加入 1% 止盈重置:口袋从锚点涨够 1% (≥锚点×1.01) → 立刻回到第 1 级,锚点更新为当前口袋,起步按新锚点÷200 重算。频繁锁小利润避免吐回去。回测过去 1 年。",
+        "factory": strat_dalembert_take_profit,
+        "data_source": "1y",
     },
 ]
 
