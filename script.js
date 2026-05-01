@@ -43,8 +43,30 @@ async function loadStrategy(id) {
   renderEquityChart(data.daily, data.events);
   renderPnlChart(data.daily, data.events);
   renderEvents(data.events);
-  renderCalendar(data.daily, data.events);
+  setupYearPickerAndRenderCalendar(data);
   closeDayDetail();
+}
+
+function setupYearPickerAndRenderCalendar(data) {
+  const years = Array.from(new Set(data.daily.map((d) => d.date.slice(0, 4)))).sort();
+  const wrap = document.getElementById("year-picker-wrap");
+  const sel = document.getElementById("year-select");
+  if (years.length <= 1) {
+    wrap.style.display = "none";
+    renderCalendar(data.daily, data.events);
+    return;
+  }
+  wrap.style.display = "flex";
+  sel.innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join("");
+  // 默认选最后一年 (最近)
+  sel.value = years[years.length - 1];
+  sel.onchange = () => {
+    const year = sel.value;
+    const filteredDaily = data.daily.filter((d) => d.date.startsWith(year));
+    const filteredEvents = data.events.filter((ev) => ev.date.startsWith(year));
+    renderCalendar(filteredDaily, filteredEvents);
+  };
+  sel.onchange();
 }
 
 function renderStats(s) {
@@ -212,24 +234,48 @@ function colorForPnl(pnl) {
   }
 }
 
+const MONTH_LABELS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+
 function renderCalendar(daily, events) {
   const cal = document.getElementById("calendar");
   cal.innerHTML = "";
   const eventDays = new Set();
   events.forEach((ev) => eventDays.add(ev.date + "-" + ev.type));
 
+  // 按 YYYY-MM 分组
+  const monthGroups = {};
   daily.forEach((d) => {
-    const cell = document.createElement("div");
-    cell.className = "day-cell";
-    cell.style.background = colorForPnl(d.pnl);
-    if (eventDays.has(d.date + "-bust")) cell.classList.add("bust");
-    if (eventDays.has(d.date + "-realloc")) cell.classList.add("realloc");
+    const ym = d.date.slice(0, 7);
+    if (!monthGroups[ym]) monthGroups[ym] = [];
+    monthGroups[ym].push(d);
+  });
 
-    const dayNum = parseInt(d.date.split("-")[2]);
-    cell.innerHTML = `<span class="day-num">${dayNum}</span><span class="day-pnl">${d.pnl >= 0 ? "+" : ""}${d.pnl}</span>`;
-    cell.title = `${d.date}\n开: ${fmtMoney(d.open)}\n收: ${fmtMoney(d.close)}\n盈亏: ${d.pnl >= 0 ? "+" : ""}${fmtMoney(d.pnl)}\n下注: ${d.bets} (赢 ${d.wins})`;
-    cell.addEventListener("click", () => openDay(d.date));
-    cal.appendChild(cell);
+  const sortedMonths = Object.keys(monthGroups).sort();
+  sortedMonths.forEach((ym) => {
+    const block = document.createElement("div");
+    block.className = "month-block";
+    const [y, m] = ym.split("-");
+    const monthLabel = MONTH_LABELS[parseInt(m) - 1];
+    const monthDays = monthGroups[ym];
+    const monthPnl = monthDays.reduce((sum, d) => sum + d.pnl, 0);
+    const monthBets = monthDays.reduce((sum, d) => sum + d.bets, 0);
+    const pnlColor = monthPnl >= 0 ? "#a8e6cf" : "#ffaaa5";
+    block.innerHTML = `<div class="month-label">${y}年 ${monthLabel} <span style="color:${pnlColor};font-weight:400;margin-left:10px">月度 ${monthPnl >= 0 ? "+" : ""}${fmtMoney(monthPnl)} · 下注 ${monthBets} 次</span></div><div class="month-grid"></div>`;
+    const grid = block.querySelector(".month-grid");
+
+    monthDays.forEach((d) => {
+      const cell = document.createElement("div");
+      cell.className = "day-cell";
+      cell.style.background = colorForPnl(d.pnl);
+      if (eventDays.has(d.date + "-bust")) cell.classList.add("bust");
+      if (eventDays.has(d.date + "-realloc")) cell.classList.add("realloc");
+      const dayNum = parseInt(d.date.split("-")[2]);
+      cell.innerHTML = `<span class="day-num">${dayNum}</span><span class="day-pnl">${d.pnl >= 0 ? "+" : ""}${d.pnl}</span>`;
+      cell.title = `${d.date}\n开: ${fmtMoney(d.open)}\n收: ${fmtMoney(d.close)}\n盈亏: ${d.pnl >= 0 ? "+" : ""}${fmtMoney(d.pnl)}\n下注: ${d.bets} (赢 ${d.wins})`;
+      cell.addEventListener("click", () => openDay(d.date));
+      grid.appendChild(cell);
+    });
+    cal.appendChild(block);
   });
 }
 
@@ -256,7 +302,11 @@ function openDay(date) {
 
   const tbody = document.getElementById("day-detail-trades");
   if (!trades.length) {
-    tbody.innerHTML = '<p style="color:#8b98a5;padding:16px">当天无下注 (信号未触发)</p>';
+    if (!currentData.keep_all_trades && dailyEntry && dailyEntry.bets > 0) {
+      tbody.innerHTML = `<p style="color:#8b98a5;padding:16px">本日下注 <strong>${dailyEntry.bets}</strong> 次, 赢 <strong>${dailyEntry.wins}</strong>, 亏 <strong>${dailyEntry.bets - dailyEntry.wins}</strong>, 当日盈亏 <strong style="color:${dailyEntry.pnl >= 0 ? "#4caf50" : "#f44336"}">${dailyEntry.pnl >= 0 ? "+" : ""}${fmtMoney(dailyEntry.pnl)}</strong><br>(10 年回测为节省体积,只保留爆仓/翻倍当天的逐笔订单)</p>`;
+    } else {
+      tbody.innerHTML = '<p style="color:#8b98a5;padding:16px">当天无下注 (信号未触发)</p>';
+    }
     return;
   }
 

@@ -11,6 +11,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 DB_1Y = "/Users/long/.openclaw/workspace/PC28/data/pc28_past_1year.db"
+DB_FULL = "/Users/long/.openclaw/workspace/PC28/data/pc28_full.db"
 OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 START_TOTAL = 10000
 TARGET = 1_000_000
@@ -137,15 +138,23 @@ def strat_low_freq():
 
 STRATEGIES = [
     {
-        "id": "dalembert",
-        "name": "连3单押双 爬楼梯",
-        "desc": "信号:连续 3 期开单 → 押双。爬楼梯下注:输 +$10, 赢 -$10, 起步 $10。过去 1 年回测 $10K → $79,755 (+697%)。但 30 年验证 70% 概率破产,过去 1 年是 p95 极幸运区间。",
+        "id": "dalembert_1y",
+        "name": "连3单押双 爬楼梯 (过去 1 年)",
+        "desc": "信号:连续 3 期开单 → 押双。爬楼梯下注:输 +$10, 赢 -$10, 起步 $10。回测过去 1 年 (2025-04-29 → 2026-04-28, 146,396 期)。",
         "factory": strat_dalembert,
+        "data_source": "1y",
+    },
+    {
+        "id": "dalembert_10y",
+        "name": "连3单押双 爬楼梯 (过去 10 年)",
+        "desc": "同样的策略,回测过去 10 年 (2016-04-29 → 2026-04-28, ~1.46M 期)。多年数据可看长期表现。注意:10 年订单明细量大,只保留事件日 (爆仓/翻倍) 详情,其他日子显示当日聚合统计。",
+        "factory": strat_dalembert,
+        "data_source": "10y",
     },
 ]
 
 
-def run_backtest(strategy_id, strategy_factory, draws):
+def run_backtest(strategy_id, strategy_factory, draws, keep_all_trades=True):
     """跑回测,生成完整数据"""
     strategy_fn = strategy_factory()
     state = State(
@@ -299,36 +308,59 @@ def run_backtest(strategy_id, strategy_factory, draws):
         "days": len(daily_list),
     }
 
+    # 长期回测时,只保留事件日的订单详情以减小 JSON 体积
+    if not keep_all_trades:
+        event_dates = set(ev["date"] for ev in events)
+        trades_by_day_filtered = {d: trades_by_day[d] for d in event_dates if d in trades_by_day}
+    else:
+        trades_by_day_filtered = dict(trades_by_day)
+
     return {
         "summary": summary,
         "daily": daily_list,
-        "trades_by_day": dict(trades_by_day),
+        "trades_by_day": trades_by_day_filtered,
         "events": events,
+        "keep_all_trades": keep_all_trades,
     }
+
+
+def load_draws(data_source):
+    """加载数据,根据 data_source 切片"""
+    if data_source == "1y":
+        conn = sqlite3.connect(DB_1Y)
+        query = "SELECT issue, sum, bigsmall, oddeven, date, time FROM draws ORDER BY ts_utc ASC"
+    elif data_source == "10y":
+        conn = sqlite3.connect(DB_FULL)
+        # 过去 10 年: 2016-04-29 起
+        query = "SELECT issue, sum, bigsmall, oddeven, date, time FROM draws WHERE date >= '2016-04-29' ORDER BY ts_utc ASC"
+    else:
+        raise ValueError(f"unknown data_source: {data_source}")
+    c = conn.cursor()
+    c.execute(query)
+    draws = [{"issue": r[0], "sum": r[1], "bs": r[2], "oe": r[3], "date": r[4], "time": r[5]}
+             for r in c.fetchall()]
+    conn.close()
+    return draws
 
 
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
 
-    # 加载数据
-    conn = sqlite3.connect(DB_1Y)
-    c = conn.cursor()
-    c.execute("SELECT issue, sum, bigsmall, oddeven, date, time FROM draws ORDER BY ts_utc ASC")
-    draws = []
-    for r in c.fetchall():
-        draws.append({
-            "issue": r[0], "sum": r[1], "bs": r[2], "oe": r[3],
-            "date": r[4], "time": r[5],
-        })
-    conn.close()
-    print(f"加载 {len(draws):,} 期 ({draws[0]['date']} → {draws[-1]['date']})")
-
-    # 策略列表
     strategies_meta = []
     for st in STRATEGIES:
-        print(f"\n>>> 跑策略: {st['name']}")
-        result = run_backtest(st["id"], st["factory"], draws)
+        data_source = st.get("data_source", "1y")
+        print(f"\n>>> 跑策略: {st['name']} (data={data_source})")
+        draws = load_draws(data_source)
+        print(f"    加载 {len(draws):,} 期 ({draws[0]['date']} → {draws[-1]['date']})")
+
+        # 长期回测不保留全部 trade detail
+        keep_all = data_source == "1y"
+        result = run_backtest(st["id"], st["factory"], draws, keep_all_trades=keep_all)
         s = result["summary"]
+        s["data_source"] = data_source
+        s["date_start"] = draws[0]["date"]
+        s["date_end"] = draws[-1]["date"]
+        s["total_draws"] = len(draws)
         print(f"    终值 ${s['end_total']:,}, PnL {s['pnl_pct']:+.1f}%, 峰值 ${s['peak_total']:,}, 爆仓 {s['busts']}, 翻倍 {s['realloc']}")
 
         out_path = os.path.join(OUT_DIR, f"{st['id']}.json")
@@ -346,7 +378,6 @@ def main():
     # 元数据
     meta = {
         "strategies": strategies_meta,
-        "data_range": {"start": draws[0]["date"], "end": draws[-1]["date"], "total_draws": len(draws)},
         "framework": {
             "start_total": START_TOTAL,
             "table_ratio": "1/5",

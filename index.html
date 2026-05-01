@@ -100,9 +100,15 @@
 </section>
 
 <section class="calendar-section">
-  <h3>365 天日历 (点击查看当日订单明细)</h3>
+  <div class="calendar-header">
+    <h3>📅 日历 (点击单日查看明细)</h3>
+    <div class="year-picker" id="year-picker-wrap" style="display:none">
+      <label for="year-select">年份:</label>
+      <select id="year-select"></select>
+    </div>
+  </div>
   <div class="calendar-legend">
-    <span class="legend-item"><span class="dot" style="background:#e8e8e8"></span>空闲</span>
+    <span class="legend-item"><span class="dot" style="background:#2a2d33"></span>空闲</span>
     <span class="legend-item"><span class="dot" style="background:#a8e6cf"></span>当日盈利</span>
     <span class="legend-item"><span class="dot" style="background:#ffaaa5"></span>当日亏损</span>
     <span class="legend-item"><span class="dot bust-marker">💀</span>爆仓日</span>

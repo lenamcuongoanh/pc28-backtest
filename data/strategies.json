@@ -1,11 +1,11 @@
 {
   "strategies": [
     {
-      "id": "dalembert",
-      "name": "连3单押双 爬楼梯",
-      "desc": "信号:连续 3 期开单 → 押双。爬楼梯下注:输 +$10, 赢 -$10, 起步 $10。过去 1 年回测 $10K → $79,755 (+697%)。但 30 年验证 70% 概率破产,过去 1 年是 p95 极幸运区间。",
+      "id": "dalembert_1y",
+      "name": "连3单押双 爬楼梯 (过去 1 年)",
+      "desc": "信号:连续 3 期开单 → 押双。爬楼梯下注:输 +$10, 赢 -$10, 起步 $10。回测过去 1 年 (2025-04-29 → 2026-04-28, 146,396 期)。",
       "summary": {
-        "strategy_id": "dalembert",
+        "strategy_id": "dalembert_1y",
         "start_total": 10000,
         "end_total": 79755,
         "peak_total": 80730,
@@ -20,15 +20,41 @@
         "target_hit": null,
         "current_table": 15387,
         "current_reserve": 64368,
-        "days": 365
+        "days": 365,
+        "data_source": "1y",
+        "date_start": "2025-04-29",
+        "date_end": "2026-04-28",
+        "total_draws": 146396
+      }
+    },
+    {
+      "id": "dalembert_10y",
+      "name": "连3单押双 爬楼梯 (过去 10 年)",
+      "desc": "同样的策略,回测过去 10 年 (2016-04-29 → 2026-04-28, ~1.46M 期)。多年数据可看长期表现。注意:10 年订单明细量大,只保留事件日 (爆仓/翻倍) 详情,其他日子显示当日聚合统计。",
+      "summary": {
+        "strategy_id": "dalembert_10y",
+        "start_total": 10000,
+        "end_total": 4,
+        "peak_total": 16731,
+        "pnl": -9996,
+        "pnl_pct": -99.96000000000001,
+        "peak_pct": 67.31,
+        "total_bets": 10643,
+        "total_wins": 5363,
+        "win_rate": 50.38992765197783,
+        "busts": 37,
+        "realloc": 0,
+        "target_hit": null,
+        "current_table": 0,
+        "current_reserve": 4,
+        "days": 3652,
+        "data_source": "10y",
+        "date_start": "2016-04-29",
+        "date_end": "2026-04-28",
+        "total_draws": 1434916
       }
     }
   ],
-  "data_range": {
-    "start": "2025-04-29",
-    "end": "2026-04-28",
-    "total_draws": 146396
-  },
   "framework": {
     "start_total": 10000,
     "table_ratio": "1/5",
