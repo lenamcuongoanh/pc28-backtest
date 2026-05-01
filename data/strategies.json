@@ -1,0 +1,109 @@
+{
+  "strategies": [
+    {
+      "id": "micro_martingale",
+      "name": "连3单押双 微马丁 (稳健)",
+      "desc": "信号:连续3期开单 → 押双。金额:$10 → 输了 $20 → 再输回 $10 重新等。30 年 5 段 walk-forward 全正,年化 +6%。",
+      "summary": {
+        "strategy_id": "micro_martingale",
+        "start_total": 10000,
+        "end_total": 11680,
+        "peak_total": 11870,
+        "pnl": 1680,
+        "pnl_pct": 16.8,
+        "peak_pct": 18.7,
+        "total_bets": 18204,
+        "total_wins": 9137,
+        "win_rate": 50.19226543616787,
+        "busts": 0,
+        "realloc": 0,
+        "target_hit": null,
+        "current_table": 3680,
+        "current_reserve": 8000,
+        "days": 365
+      }
+    },
+    {
+      "id": "dalembert",
+      "name": "连3单押双 爬楼梯 (1 年大爆发)",
+      "desc": "信号:连续3期开单 → 押双。爬楼梯:输 +$10, 赢 -$10。过去 1 年 +697%,但 30 年 70% 概率破产。",
+      "summary": {
+        "strategy_id": "dalembert",
+        "start_total": 10000,
+        "end_total": 79755,
+        "peak_total": 80730,
+        "pnl": 69755,
+        "pnl_pct": 697.5500000000001,
+        "peak_pct": 707.3000000000001,
+        "total_bets": 18204,
+        "total_wins": 9137,
+        "win_rate": 50.19226543616787,
+        "busts": 1,
+        "realloc": 3,
+        "target_hit": null,
+        "current_table": 15387,
+        "current_reserve": 64368,
+        "days": 365
+      }
+    },
+    {
+      "id": "moonshot",
+      "name": "连3同色反向全押 (冲百倍)",
+      "desc": "信号:连续3期同色 (大/小/单/双 任一) → 反向全押 table。达 $1M 停手。历史模拟 1.5% 概率 1 年内 100x。",
+      "summary": {
+        "strategy_id": "moonshot",
+        "start_total": 10000,
+        "end_total": 4,
+        "peak_total": 12000,
+        "pnl": -9996,
+        "pnl_pct": -99.96000000000001,
+        "peak_pct": 20.0,
+        "total_bets": 85,
+        "total_wins": 48,
+        "win_rate": 56.470588235294116,
+        "busts": 37,
+        "realloc": 0,
+        "target_hit": null,
+        "current_table": 0,
+        "current_reserve": 4,
+        "days": 365
+      }
+    },
+    {
+      "id": "low_freq",
+      "name": "连11大押小 $50 (低频)",
+      "desc": "信号:连续11期开大 → 押小 $50。低频高胜率 (Monte Carlo 67%),1 年触发约 70 次。",
+      "summary": {
+        "strategy_id": "low_freq",
+        "start_total": 10000,
+        "end_total": 10349,
+        "peak_total": 10549,
+        "pnl": 349,
+        "pnl_pct": 3.49,
+        "peak_pct": 5.489999999999999,
+        "total_bets": 47,
+        "total_wins": 27,
+        "win_rate": 57.446808510638306,
+        "busts": 0,
+        "realloc": 0,
+        "target_hit": null,
+        "current_table": 2349,
+        "current_reserve": 8000,
+        "days": 365
+      }
+    }
+  ],
+  "data_range": {
+    "start": "2025-04-29",
+    "end": "2026-04-28",
+    "total_draws": 146396
+  },
+  "framework": {
+    "start_total": 10000,
+    "table_ratio": "1/5",
+    "reserve_ratio": "4/5",
+    "target": 1000000,
+    "max_bet": 12000,
+    "rules_summary": "起始 $10K → 口袋 $2K + 备用金 $8K。爆仓 → 拿剩余 1/5 当新口袋。总额 ≥ 锚点×2 → 重新分配 (1/5 + 4/5)。达 $1M 停手。"
+  }
+}

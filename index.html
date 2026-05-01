@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PC28 策略回测</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+<header>
+  <h1>PC28 策略回测</h1>
+  <p class="subtitle">过去 1 年真实开奖数据 (146,396 期 · 2025-04-29 → 2026-04-28) · 起始 $10,000 (口袋 $2K + 备用金 $8K)</p>
+</header>
+
+<section class="strategy-picker">
+  <label for="strategy-select">选择策略:</label>
+  <select id="strategy-select"></select>
+  <p id="strategy-desc" class="strategy-desc"></p>
+</section>
+
+<section class="stats-card">
+  <div class="stat"><span class="stat-label">起始</span><span class="stat-value" id="stat-start">--</span></div>
+  <div class="stat"><span class="stat-label">终值</span><span class="stat-value" id="stat-end">--</span></div>
+  <div class="stat"><span class="stat-label">PnL</span><span class="stat-value" id="stat-pnl">--</span></div>
+  <div class="stat"><span class="stat-label">峰值</span><span class="stat-value" id="stat-peak">--</span></div>
+  <div class="stat pocket"><span class="stat-label">当前口袋</span><span class="stat-value" id="stat-table">--</span></div>
+  <div class="stat reserve"><span class="stat-label">当前备用金</span><span class="stat-value" id="stat-reserve">--</span></div>
+  <div class="stat"><span class="stat-label">下注 / 胜率</span><span class="stat-value" id="stat-bets">--</span></div>
+  <div class="stat"><span class="stat-label">最大回撤</span><span class="stat-value" id="stat-dd">--</span></div>
+  <div class="stat danger"><span class="stat-label">💀 爆仓次数</span><span class="stat-value" id="stat-busts">--</span></div>
+  <div class="stat success"><span class="stat-label">🎉 翻倍次数</span><span class="stat-value" id="stat-realloc">--</span></div>
+</section>
+
+<section class="charts">
+  <div class="chart-block">
+    <h3>资金净值曲线 (实线=总额, 虚线=备用金)</h3>
+    <div id="equity-chart" class="chart"></div>
+  </div>
+  <div class="chart-block">
+    <h3>每日盈亏 K 线 (滚轮缩放, 拖动平移)</h3>
+    <div id="pnl-chart" class="chart"></div>
+  </div>
+</section>
+
+<section class="events-section" id="events-section">
+  <h3>关键事件 (爆仓 / 翻倍)</h3>
+  <div id="events-list"></div>
+</section>
+
+<section class="calendar-section">
+  <h3>365 天日历 (点击查看当日订单明细)</h3>
+  <div class="calendar-legend">
+    <span class="legend-item"><span class="dot" style="background:#e8e8e8"></span>空闲</span>
+    <span class="legend-item"><span class="dot" style="background:#a8e6cf"></span>当日盈利</span>
+    <span class="legend-item"><span class="dot" style="background:#ffaaa5"></span>当日亏损</span>
+    <span class="legend-item"><span class="dot bust-marker">💀</span>爆仓日</span>
+    <span class="legend-item"><span class="dot realloc-marker">🎉</span>翻倍日</span>
+  </div>
+  <div id="calendar"></div>
+</section>
+
+<section class="day-detail" id="day-detail" style="display:none">
+  <button class="close-btn" onclick="closeDayDetail()">✕ 关闭</button>
+  <h3 id="day-detail-title">--</h3>
+  <div id="day-detail-summary" class="day-summary"></div>
+  <div id="day-detail-trades" class="trades-table"></div>
+</section>
+
+<footer>
+  <p>📊 数据源: PC28 30 年完整数据库 (BCLC Keno 衍生算法,3,426,059 期) 截取过去 1 年 · 数学事实: PC28 真实 EV ≈ -0.15%, 任何策略长期都是亏的, 短期波动因运气而定</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
