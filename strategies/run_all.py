@@ -87,16 +87,15 @@ def strat_micro_martingale():
 
 
 def strat_dalembert():
-    """连3单→押双 爬楼梯 unit=$10"""
+    """连3单→押双 爬楼梯。起步金额 = 当前口袋 // 200,最低 $1"""
     cond = streak_oe(3, "单")
     state_track = {"level": 1}
     def f(state, history, draw_sum):
         if state.total >= TARGET: return None
         if not cond(history): return None
-        unit = 10
-        amt = max(unit, state_track["level"] * unit)
-        amt = min(amt, state.table, 12000)
-        if amt < 1: return None
+        unit = max(1, state.table_init // 200)
+        amt = unit * state_track["level"]
+        amt = max(1, min(amt, state.table, 12000))
         return ("双", amt, "连3单→押双 爬楼梯")
     f.update = lambda won: state_track.update({"level": max(1, state_track["level"] - 1) if won else state_track["level"] + 1})
     f.reset = lambda: state_track.update({"level": 1})
@@ -140,14 +139,14 @@ STRATEGIES = [
     {
         "id": "dalembert_1y",
         "name": "连3单押双 爬楼梯 (过去 1 年)",
-        "desc": "信号:连续 3 期开单 → 押双。爬楼梯下注:输 +$10, 赢 -$10, 起步 $10。回测过去 1 年 (2025-04-29 → 2026-04-28, 146,396 期)。",
+        "desc": "信号:连续 3 期开单 → 押双。爬楼梯下注:起步 = 当前口袋 // 200 (eg. $2K→$10, $1.6K→$8)。输了 +1 个起步, 赢了 -1 个起步, 最低 1 起步。每次爆仓/翻倍后按新口袋重算起步。回测过去 1 年 (2025-04-29 → 2026-04-28, 146,396 期)。",
         "factory": strat_dalembert,
         "data_source": "1y",
     },
     {
         "id": "dalembert_10y",
         "name": "连3单押双 爬楼梯 (过去 10 年)",
-        "desc": "同样的策略,回测过去 10 年 (2016-04-29 → 2026-04-28, ~1.46M 期)。多年数据可看长期表现。注意:10 年订单明细量大,只保留事件日 (爆仓/翻倍) 详情,其他日子显示当日聚合统计。",
+        "desc": "同样的策略,回测过去 10 年 (2016-04-29 → 2026-04-28, ~1.46M 期)。10 年订单太多,只保留爆仓/翻倍当天的逐笔订单,其他日子显示当日聚合统计。",
         "factory": strat_dalembert,
         "data_source": "10y",
     },
