@@ -137,28 +137,10 @@ def strat_low_freq():
 
 STRATEGIES = [
     {
-        "id": "micro_martingale",
-        "name": "连3单押双 微马丁 (稳健)",
-        "desc": "信号:连续3期开单 → 押双。金额:$10 → 输了 $20 → 再输回 $10 重新等。30 年 5 段 walk-forward 全正,年化 +6%。",
-        "factory": strat_micro_martingale,
-    },
-    {
         "id": "dalembert",
-        "name": "连3单押双 爬楼梯 (1 年大爆发)",
-        "desc": "信号:连续3期开单 → 押双。爬楼梯:输 +$10, 赢 -$10。过去 1 年 +697%,但 30 年 70% 概率破产。",
+        "name": "连3单押双 爬楼梯",
+        "desc": "信号:连续 3 期开单 → 押双。爬楼梯下注:输 +$10, 赢 -$10, 起步 $10。过去 1 年回测 $10K → $79,755 (+697%)。但 30 年验证 70% 概率破产,过去 1 年是 p95 极幸运区间。",
         "factory": strat_dalembert,
-    },
-    {
-        "id": "moonshot",
-        "name": "连3同色反向全押 (冲百倍)",
-        "desc": "信号:连续3期同色 (大/小/单/双 任一) → 反向全押 table。达 $1M 停手。历史模拟 1.5% 概率 1 年内 100x。",
-        "factory": strat_moonshot,
-    },
-    {
-        "id": "low_freq",
-        "name": "连11大押小 $50 (低频)",
-        "desc": "信号:连续11期开大 → 押小 $50。低频高胜率 (Monte Carlo 67%),1 年触发约 70 次。",
-        "factory": strat_low_freq,
     },
 ]
 

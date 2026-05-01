@@ -44,6 +44,40 @@ h3 { font-size: 16px; margin-bottom: 12px; color: #e7e9ea; }
   line-height: 1.6;
 }
 
+/* 策略规则卡 */
+.rules-card {
+  background: #16181c;
+  padding: 20px 24px;
+  border-radius: 12px;
+  border: 1px solid #2f3336;
+}
+.rules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+.rule-block {
+  padding: 12px 14px;
+  background: #1d2025;
+  border-radius: 8px;
+  border-left: 3px solid #4caf50;
+}
+.rule-block.warning {
+  border-left-color: #ff9800;
+}
+.rule-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.rule-body {
+  font-size: 13px;
+  color: #c5d1da;
+  line-height: 1.6;
+}
+.hl-pocket { color: #4caf50; font-weight: 600; }
+.hl-reserve { color: #ff9800; font-weight: 600; }
+
 /* 统计卡片 */
 .stats-card {
   display: grid;

@@ -19,6 +19,57 @@
   <p id="strategy-desc" class="strategy-desc"></p>
 </section>
 
+<section class="rules-card">
+  <h3>📜 策略规则</h3>
+  <div class="rules-grid">
+    <div class="rule-block">
+      <div class="rule-title">📦 起步</div>
+      <div class="rule-body">$10,000 → 口袋 <span class="hl-pocket">$2,000</span> + 备用金 <span class="hl-reserve">$8,000</span></div>
+    </div>
+    <div class="rule-block">
+      <div class="rule-title">👀 触发信号</div>
+      <div class="rule-body">
+        连续 3 期都开<b>单</b> (sum 是奇数) → 押双
+        <br><i>其他情况不出手,等信号</i>
+      </div>
+    </div>
+    <div class="rule-block">
+      <div class="rule-title">💰 爬楼梯下注法</div>
+      <div class="rule-body">
+        起步 <b>$10</b><br>
+        输了 → 加 $10 (eg. $10→$20→$30...)<br>
+        赢了 → 减 $10 (eg. $30→$20→$10)<br>
+        最少回到 $10 不再降<br>
+        <i>核心:输越多下越大,赢一次抹平之前累计亏损</i>
+      </div>
+    </div>
+    <div class="rule-block">
+      <div class="rule-title">💀 输光 (爆仓)</div>
+      <div class="rule-body">口袋归零 → 从备用金拿 <b>1/5</b> 当新口袋。爬楼梯 level 重置回 1 ($10)。</div>
+    </div>
+    <div class="rule-block">
+      <div class="rule-title">🎉 总额翻倍</div>
+      <div class="rule-body">总本金达到锚点 ×2 → 重新分配 (1/5 + 4/5),锚点更新,爬楼梯 level 重置</div>
+    </div>
+    <div class="rule-block">
+      <div class="rule-title">🛑 停手</div>
+      <div class="rule-body">总本金 ≥ $1,000,000 → 立刻停止下注</div>
+    </div>
+    <div class="rule-block">
+      <div class="rule-title">📈 过去 1 年回测</div>
+      <div class="rule-body">$10K → <b>$79,755 (+697%)</b><br>下注 18,204 次,胜率 50.19%,爆仓 1 次,翻倍 3 次</div>
+    </div>
+    <div class="rule-block warning">
+      <div class="rule-title">⚠️ 风险提示</div>
+      <div class="rule-body">
+        30 年回测 5 段中只有 1 段盈利,其他 4 段全部破产 (爬楼梯遇到长输连击会爆桶)<br>
+        268 个滚动 1 年窗口里 <b>70.9% 完全归零</b>, 22.4% 盈利<br>
+        过去 1 年是 p95 上限,极度幸运,不代表未来
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="stats-card">
   <div class="stat"><span class="stat-label">起始</span><span class="stat-value" id="stat-start">--</span></div>
   <div class="stat"><span class="stat-label">终值</span><span class="stat-value" id="stat-end">--</span></div>
