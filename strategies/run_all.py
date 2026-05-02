@@ -150,6 +150,43 @@ def strat_k12_da_xiao_5000():
     return factory()
 
 
+def strat_k4_4dir_dalembert():
+    """连4同色 (大/小/单/双 任一) → 反向押 + 胜负路爬楼梯。
+    优先级: 大 > 小 > 单 > 双。
+    """
+    state_track = {"level": 1}
+    def factory():
+        state_track["level"] = 1
+        def f(state, history, draw_sum):
+            if state.total >= TARGET: return None
+            if len(history) < 4: return None
+            recent = history[-4:]
+            # 按优先级 大 > 小 > 单 > 双
+            side = None
+            reason = None
+            if all(r["bs"] == "大" for r in recent):
+                side = "小"; reason = "连4大→押小"
+            elif all(r["bs"] == "小" for r in recent):
+                side = "大"; reason = "连4小→押大"
+            elif all(r["oe"] == "单" for r in recent):
+                side = "双"; reason = "连4单→押双"
+            elif all(r["oe"] == "双" for r in recent):
+                side = "单"; reason = "连4双→押单"
+            if side is None: return None
+            unit = max(1, state.table_init // 200)
+            amt = unit * state_track["level"]
+            amt = max(1, min(amt, state.table, 12000))
+            return (side, amt, reason)
+        def update(won):
+            state_track["level"] = max(1, state_track["level"] - 1) if won else state_track["level"] + 1
+        def reset():
+            state_track["level"] = 1
+        f.update = update
+        f.reset = reset
+        return f
+    return factory()
+
+
 def strat_k4_dan_shuang_dalembert():
     """连4期开单 → 押1期双 + 胜负路爬楼梯 (输+1, 赢-1, 起步 = 口袋÷200)"""
     def cond(h):
@@ -339,6 +376,20 @@ STRATEGIES = [
         "name": "[10年 -54%] 连4单→押双 胜负路爬楼梯",
         "desc": "同样的策略 (连4单押双 + 胜负路爬楼梯),回测过去 10 年 (~1.4M 期)。10 年实测 $10K → $4,606 (-53.9%),40 爆仓 + 4 翻倍,峰值 $178,363。说明这个策略在 10 年级别长期会被磨损,但短期 (过去 1 年) 表现不错。",
         "factory": strat_k4_dan_shuang_dalembert,
+        "data_source": "10y",
+    },
+    {
+        "id": "k4_4dir_dalembert_1y",
+        "name": "[1年 +305%] 连4同色4向 反向胜负路爬楼梯",
+        "desc": "信号 (4 选 1, 任一即触发):连4大→押小 / 连4小→押大 / 连4单→押双 / 连4双→押单。多触发优先级:大 > 小 > 单 > 双。胜负路爬楼梯共享 level (起步 = 口袋÷200,输+1, 赢-1, 最低 1)。每个触发只下 1 期。1 年实测 $10K → $40,483 (+305%),10 爆仓 + 2 翻倍,峰值 $55,148。",
+        "factory": strat_k4_4dir_dalembert,
+        "data_source": "1y",
+    },
+    {
+        "id": "k4_4dir_dalembert_10y",
+        "name": "[10年 破产] 连4同色4向 反向胜负路爬楼梯",
+        "desc": "同样的策略,回测过去 10 年。10 年实测 $10K → $0 (破产),41 爆仓 + 0 翻倍。说明胜负路爬楼梯 + K=4 信号 (4向) 长期还是会被磨损。",
+        "factory": strat_k4_4dir_dalembert,
         "data_source": "10y",
     },
 ]
