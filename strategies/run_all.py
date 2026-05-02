@@ -150,6 +150,31 @@ def strat_k12_da_xiao_5000():
     return factory()
 
 
+def strat_k4_dan_shuang_dalembert():
+    """连4期开单 → 押1期双 + 胜负路爬楼梯 (输+1, 赢-1, 起步 = 口袋÷200)"""
+    def cond(h):
+        if len(h) < 4: return False
+        return all(r["oe"] == "单" for r in h[-4:])
+    state_track = {"level": 1}
+    def factory():
+        state_track["level"] = 1
+        def f(state, history, draw_sum):
+            if state.total >= TARGET: return None
+            if not cond(history): return None
+            unit = max(1, state.table_init // 200)
+            amt = unit * state_track["level"]
+            amt = max(1, min(amt, state.table, 12000))
+            return ("双", amt, "连4单→押双 胜负路爬楼梯")
+        def update(won):
+            state_track["level"] = max(1, state_track["level"] - 1) if won else state_track["level"] + 1
+        def reset():
+            state_track["level"] = 1
+        f.update = update
+        f.reset = reset
+        return f
+    return factory()
+
+
 def strat_k12_da_xiao_1500():
     """连12期开大 → 押小 $1500 (10 年 +743%, 0 爆仓 稳健)"""
     def cond(h):
@@ -300,6 +325,20 @@ STRATEGIES = [
         "name": "[10年 +743% 🛡️稳健0爆仓] 连12大→小 $1500",
         "desc": "信号:连续 12 期开大 → 押小 固定 $1500。10 年实测 $10K → $84,340 (+743%, 年化 23.7% 跟巴菲特持平),**0 次爆仓** + 24.6% 回撤。0 爆仓中 PnL 最高的策略。",
         "factory": strat_k12_da_xiao_1500,
+        "data_source": "10y",
+    },
+    {
+        "id": "k4dan_dalembert_1y",
+        "name": "[1年 +220%] 连4单→押双 胜负路爬楼梯",
+        "desc": "信号:连续 4 期开单 → 下一期押双。胜负路爬楼梯:起步 = 口袋÷200 (eg. $2K→$10),押双输了 +1 个起步,押双赢了 -1 个起步,最低回到 1 个起步。每个连4单触发只下 1 期。爆仓/翻倍后 level 重置回 1,起步按新口袋重算。1 年实测 $10K → $31,958 (+220%),3 爆仓 + 1 翻倍。",
+        "factory": strat_k4_dan_shuang_dalembert,
+        "data_source": "1y",
+    },
+    {
+        "id": "k4dan_dalembert_10y",
+        "name": "[10年 -54%] 连4单→押双 胜负路爬楼梯",
+        "desc": "同样的策略 (连4单押双 + 胜负路爬楼梯),回测过去 10 年 (~1.4M 期)。10 年实测 $10K → $4,606 (-53.9%),40 爆仓 + 4 翻倍,峰值 $178,363。说明这个策略在 10 年级别长期会被磨损,但短期 (过去 1 年) 表现不错。",
+        "factory": strat_k4_dan_shuang_dalembert,
         "data_source": "10y",
     },
 ]
