@@ -350,6 +350,60 @@
         "date_end": "2026-04-28",
         "total_draws": 1434916
       }
+    },
+    {
+      "id": "k4_4dir_2bet_1y",
+      "name": "[1年 -24%] 恰好连4同色4向 反向2注(赢即停) 胜负路爬楼梯",
+      "desc": "信号:恰好连 4 期同色 (优先级大>小>单>双)。下注:第 1 注押反向 → 赢则结束 + level-1; 输则 level+1 + 押第 2 注同方向; 第 2 注完成后无论输赢都结束。Session 期间不重新触发。胜负路 d'Alembert level 跨 session 持续。1 年实测 $10K → $7,654 (-23.5%),8 爆仓,峰值 $13,863。",
+      "summary": {
+        "strategy_id": "k4_4dir_2bet_1y",
+        "start_total": 10000,
+        "end_total": 7654,
+        "peak_total": 13863,
+        "pnl": -2346,
+        "pnl_pct": -23.46,
+        "peak_pct": 38.629999999999995,
+        "total_bets": 25724,
+        "total_wins": 12977,
+        "win_rate": 50.44705333540662,
+        "busts": 8,
+        "realloc": 0,
+        "target_hit": null,
+        "current_table": 6310,
+        "current_reserve": 1344,
+        "days": 365,
+        "data_source": "1y",
+        "date_start": "2025-04-29",
+        "date_end": "2026-04-28",
+        "total_draws": 146396
+      }
+    },
+    {
+      "id": "k4_4dir_2bet_10y",
+      "name": "[10年 破产] 恰好连4同色4向 反向2注(赢即停) 胜负路爬楼梯",
+      "desc": "同样策略,回测过去 10 年。10 年实测 $10K → $0 (破产),45 爆仓,峰值 $10,722。",
+      "summary": {
+        "strategy_id": "k4_4dir_2bet_10y",
+        "start_total": 10000,
+        "end_total": 0,
+        "peak_total": 10722,
+        "pnl": -10000,
+        "pnl_pct": -100.0,
+        "peak_pct": 7.22,
+        "total_bets": 31521,
+        "total_wins": 15819,
+        "win_rate": 50.185590558675166,
+        "busts": 45,
+        "realloc": 0,
+        "target_hit": null,
+        "current_table": 0,
+        "current_reserve": 0,
+        "days": 458,
+        "data_source": "10y",
+        "date_start": "2016-04-29",
+        "date_end": "2026-04-28",
+        "total_draws": 1434916
+      }
     }
   ],
   "framework": {

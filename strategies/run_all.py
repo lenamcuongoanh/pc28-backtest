@@ -150,6 +150,80 @@ def strat_k12_da_xiao_5000():
     return factory()
 
 
+def strat_k4_4dir_dalembert_2bet():
+    """恰好连 4 同色 4向 → 反向押,最多 2 次 (赢则停),胜负路爬楼梯。
+    触发: 最近 4 期同色 AND 第 5 期不同色,优先级 大>小>单>双。
+    下注: 第1注押反向; 赢则结束 + level-1; 输则 level+1 + 接 2nd 注;
+          第2注完成后 (无论输赢) 结束本次 session。
+    Session 期间不重新触发。
+    """
+    state_track = {"level": 1, "remaining_bets": 0, "session_side": None}
+
+    def factory():
+        state_track["level"] = 1
+        state_track["remaining_bets"] = 0
+        state_track["session_side"] = None
+
+        def f(state, history, draw_sum):
+            if state.total >= TARGET: return None
+
+            # Session 进行中:下第 2 注
+            if state_track["remaining_bets"] > 0:
+                unit = max(1, state.table_init // 200)
+                amt = unit * state_track["level"]
+                amt = max(1, min(amt, state.table, 12000))
+                return (state_track["session_side"], amt, f"押{state_track['session_side']} 第2注")
+
+            # Session 不在 → 检查触发
+            if len(history) < 4: return None
+            recent = history[-4:]
+
+            def exactly_4_same(key, value):
+                if not all(r[key] == value for r in recent):
+                    return False
+                if len(history) >= 5 and history[-5][key] == value:
+                    return False
+                return True
+
+            side = None
+            reason = None
+            if exactly_4_same("bs", "大"):
+                side = "小"; reason = "恰好连4大"
+            elif exactly_4_same("bs", "小"):
+                side = "大"; reason = "恰好连4小"
+            elif exactly_4_same("oe", "单"):
+                side = "双"; reason = "恰好连4单"
+            elif exactly_4_same("oe", "双"):
+                side = "单"; reason = "恰好连4双"
+            if side is None: return None
+
+            # 新 session 开启
+            state_track["remaining_bets"] = 2
+            state_track["session_side"] = side
+            unit = max(1, state.table_init // 200)
+            amt = unit * state_track["level"]
+            amt = max(1, min(amt, state.table, 12000))
+            return (side, amt, f"{reason}→押{side} 第1注")
+
+        def update(won):
+            state_track["remaining_bets"] -= 1
+            if won:
+                state_track["level"] = max(1, state_track["level"] - 1)
+                state_track["remaining_bets"] = 0  # 赢就停
+            else:
+                state_track["level"] += 1
+
+        def reset():
+            state_track["level"] = 1
+            state_track["remaining_bets"] = 0
+            state_track["session_side"] = None
+
+        f.update = update
+        f.reset = reset
+        return f
+    return factory()
+
+
 def strat_k4_4dir_dalembert():
     """恰好连 4 期同色 (不是 ≥4) → 反向押 + 胜负路爬楼梯。
     触发条件: 最近 4 期同色 AND 第 5 期不同色 (或历史不足 5 期)
@@ -399,6 +473,20 @@ STRATEGIES = [
         "name": "[10年 破产] 恰好连4同色4向 反向胜负路爬楼梯",
         "desc": "同样的策略,回测过去 10 年。10 年实测 $10K → $0 (破产),51 爆仓 + 1 翻倍,峰值 $23,823。修复触发 bug 后的真实长期表现:虽然不会重复触发,但每次触发只下 1 注,d'Alembert 没法在长期克服 -0.15% 抽水。",
         "factory": strat_k4_4dir_dalembert,
+        "data_source": "10y",
+    },
+    {
+        "id": "k4_4dir_2bet_1y",
+        "name": "[1年 -24%] 恰好连4同色4向 反向2注(赢即停) 胜负路爬楼梯",
+        "desc": "信号:恰好连 4 期同色 (优先级大>小>单>双)。下注:第 1 注押反向 → 赢则结束 + level-1; 输则 level+1 + 押第 2 注同方向; 第 2 注完成后无论输赢都结束。Session 期间不重新触发。胜负路 d'Alembert level 跨 session 持续。1 年实测 $10K → $7,654 (-23.5%),8 爆仓,峰值 $13,863。",
+        "factory": strat_k4_4dir_dalembert_2bet,
+        "data_source": "1y",
+    },
+    {
+        "id": "k4_4dir_2bet_10y",
+        "name": "[10年 破产] 恰好连4同色4向 反向2注(赢即停) 胜负路爬楼梯",
+        "desc": "同样策略,回测过去 10 年。10 年实测 $10K → $0 (破产),45 爆仓,峰值 $10,722。",
+        "factory": strat_k4_4dir_dalembert_2bet,
         "data_source": "10y",
     },
 ]
