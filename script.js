@@ -9,6 +9,7 @@ let pnlChart = null;
 let equitySeries = null;
 let reserveSeries = null;
 let pnlSeries = null;
+let drawsCache = {}; // {data_source: {date: [[issue,time,sum,bs,oe], ...]}}
 
 async function init() {
   const meta = await (await fetch("data/strategies.json")).json();
@@ -32,12 +33,31 @@ function renderStrategyOptions(meta) {
   });
 }
 
+async function loadDrawsForSource(dataSource) {
+  if (drawsCache[dataSource] !== undefined) return drawsCache[dataSource];
+  try {
+    const res = await fetch(`data/draws_${dataSource}_all.json`);
+    if (res.ok) {
+      drawsCache[dataSource] = await res.json();
+    } else {
+      drawsCache[dataSource] = null;
+    }
+  } catch {
+    drawsCache[dataSource] = null;
+  }
+  return drawsCache[dataSource];
+}
+
 async function loadStrategy(id) {
   const data = await (await fetch(`data/${id}.json`)).json();
   currentData = data;
 
   const meta = strategiesMeta.strategies.find((s) => s.id === id);
   document.getElementById("strategy-desc").textContent = meta.desc;
+
+  // 后台预加载 draws 索引(若可用)
+  const dataSource = data.summary?.data_source || "1y";
+  loadDrawsForSource(dataSource);
 
   renderStats(data.summary);
   renderEquityChart(data.daily, data.events);
@@ -279,15 +299,16 @@ function renderCalendar(daily, events) {
   });
 }
 
-function openDay(date) {
+async function openDay(date) {
   const detail = document.getElementById("day-detail");
   detail.style.display = "block";
   detail.scrollIntoView({ behavior: "smooth", block: "start" });
 
   const dailyEntry = currentData.daily.find((d) => d.date === date);
   const trades = currentData.trades_by_day[date] || [];
+  const dataSource = currentData.summary?.data_source || "1y";
 
-  document.getElementById("day-detail-title").textContent = `📅 ${date} 订单明细`;
+  document.getElementById("day-detail-title").textContent = `📅 ${date} 全日明细`;
 
   if (dailyEntry) {
     document.getElementById("day-detail-summary").innerHTML = `
@@ -301,39 +322,97 @@ function openDay(date) {
   }
 
   const tbody = document.getElementById("day-detail-trades");
-  if (!trades.length) {
-    if (!currentData.keep_all_trades && dailyEntry && dailyEntry.bets > 0) {
-      tbody.innerHTML = `<p style="color:#8b98a5;padding:16px">本日下注 <strong>${dailyEntry.bets}</strong> 次, 赢 <strong>${dailyEntry.wins}</strong>, 亏 <strong>${dailyEntry.bets - dailyEntry.wins}</strong>, 当日盈亏 <strong style="color:${dailyEntry.pnl >= 0 ? "#4caf50" : "#f44336"}">${dailyEntry.pnl >= 0 ? "+" : ""}${fmtMoney(dailyEntry.pnl)}</strong><br>(10 年回测为节省体积,只保留爆仓/翻倍当天的逐笔订单)</p>`;
-    } else {
-      tbody.innerHTML = '<p style="color:#8b98a5;padding:16px">当天无下注 (信号未触发)</p>';
-    }
-    return;
-  }
+  tbody.innerHTML = '<p style="color:#8b98a5;padding:16px">加载中…</p>';
 
-  let html = `<div class="trade-row header">
-    <span>时间</span><span>期号</span><span>触发</span><span>押</span><span>金额</span><span>开奖</span><span>结果</span><span>余额</span><span>口袋/备用</span>
-  </div>`;
+  // 加载 draws 索引
+  const drawsIndex = await loadDrawsForSource(dataSource);
+  const drawsForDay = drawsIndex?.[date] || null;
+
+  // 把 trades 按 issue 索引,event 按时间索引
+  const tradeByIssue = {};
+  const eventsList = [];
   trades.forEach((t) => {
     if (t.msg) {
-      // 这是 event (有 msg 字段)
-      const evCls = t.msg.includes("爆仓") ? "event-bust" : "event-realloc";
-      html += `<div class="trade-row ${evCls}">${t.msg}</div>`;
-    } else {
-      const cls = t.win ? "win" : "lose";
-      const result = t.win ? `+${fmtMoney(t.delta)}` : `${fmtMoney(t.delta)}`;
-      html += `<div class="trade-row ${cls}">
-        <span>${t.time}</span>
-        <span>${t.issue}</span>
-        <span>${t.reason || ""}</span>
-        <span>${t.side}</span>
-        <span>${fmtMoney(t.amount)}</span>
-        <span>${t.draw_sum} ${t.bs}${t.oe}</span>
-        <span>${t.win ? "✅" : "❌"} ${result}</span>
-        <span>${fmtMoney(t.balance_after)}</span>
-        <span>${fmtMoney(t.table_after)} / ${fmtMoney(t.reserve_after)}</span>
-      </div>`;
+      eventsList.push(t);
+    } else if (t.issue) {
+      tradeByIssue[t.issue] = t;
     }
   });
+
+  let html = `<div class="trade-row header">
+    <span>时间</span><span>期号</span><span>开奖</span><span>触发/押</span><span>金额</span><span>结果</span><span>余额</span><span>口袋/备用</span>
+  </div>`;
+
+  if (drawsForDay) {
+    // 完整模式:列出当日所有期开奖,合并 trades 和 events
+    // 先按 issue 排序所有 draw
+    const drawsSorted = drawsForDay.slice().sort((a, b) => a[0] - b[0]);
+    drawsSorted.forEach(([issue, time, sum, bs, oe]) => {
+      const trade = tradeByIssue[issue];
+      // 先输出与该期 issue 时间最接近 (相同) 的 events
+      const matchingEvents = eventsList.filter((e) => e.issue === issue);
+      matchingEvents.forEach((e) => {
+        const evCls = e.msg.includes("爆仓") ? "event-bust" : "event-realloc";
+        html += `<div class="trade-row ${evCls}">${e.msg}</div>`;
+      });
+      if (trade) {
+        const cls = trade.win ? "win" : "lose";
+        const result = trade.win ? `+${fmtMoney(trade.delta)}` : `${fmtMoney(trade.delta)}`;
+        html += `<div class="trade-row ${cls}">
+          <span>${trade.time}</span>
+          <span>${trade.issue}</span>
+          <span>${trade.draw_sum} ${trade.bs}${trade.oe}</span>
+          <span>${trade.reason || trade.side} → ${trade.side}</span>
+          <span>${fmtMoney(trade.amount)}</span>
+          <span>${trade.win ? "✅" : "❌"} ${result}</span>
+          <span>${fmtMoney(trade.balance_after)}</span>
+          <span>${fmtMoney(trade.table_after)} / ${fmtMoney(trade.reserve_after)}</span>
+        </div>`;
+      } else {
+        // 仅开奖,无下注
+        html += `<div class="trade-row no-bet">
+          <span>${time}</span>
+          <span>${issue}</span>
+          <span>${sum} ${bs}${oe}</span>
+          <span style="color:#5a6772">— 未下注 —</span>
+          <span>—</span>
+          <span>—</span>
+          <span>—</span>
+          <span>—</span>
+        </div>`;
+      }
+    });
+  } else {
+    // 降级模式:无 draws 索引 (10y/30y),只显示 trades
+    if (!trades.length) {
+      if (!currentData.keep_all_trades && dailyEntry && dailyEntry.bets > 0) {
+        tbody.innerHTML = `<p style="color:#8b98a5;padding:16px">本日下注 <strong>${dailyEntry.bets}</strong> 次, 赢 <strong>${dailyEntry.wins}</strong>, 亏 <strong>${dailyEntry.bets - dailyEntry.wins}</strong>, 当日盈亏 <strong style="color:${dailyEntry.pnl >= 0 ? "#4caf50" : "#f44336"}">${dailyEntry.pnl >= 0 ? "+" : ""}${fmtMoney(dailyEntry.pnl)}</strong><br>(10/30 年回测为节省体积,只保留爆仓/翻倍当天的逐笔订单。完整开奖明细仅 1 年回测可见。)</p>`;
+      } else {
+        tbody.innerHTML = '<p style="color:#8b98a5;padding:16px">当天无下注 (信号未触发)。10/30 年回测不显示完整开奖明细以节省加载。</p>';
+      }
+      return;
+    }
+    trades.forEach((t) => {
+      if (t.msg) {
+        const evCls = t.msg.includes("爆仓") ? "event-bust" : "event-realloc";
+        html += `<div class="trade-row ${evCls}">${t.msg}</div>`;
+      } else {
+        const cls = t.win ? "win" : "lose";
+        const result = t.win ? `+${fmtMoney(t.delta)}` : `${fmtMoney(t.delta)}`;
+        html += `<div class="trade-row ${cls}">
+          <span>${t.time}</span>
+          <span>${t.issue}</span>
+          <span>${t.draw_sum} ${t.bs}${t.oe}</span>
+          <span>${t.reason || t.side} → ${t.side}</span>
+          <span>${fmtMoney(t.amount)}</span>
+          <span>${t.win ? "✅" : "❌"} ${result}</span>
+          <span>${fmtMoney(t.balance_after)}</span>
+          <span>${fmtMoney(t.table_after)} / ${fmtMoney(t.reserve_after)}</span>
+        </div>`;
+      }
+    });
+  }
+
   tbody.innerHTML = html;
 }
 

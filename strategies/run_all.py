@@ -150,13 +150,8 @@ def strat_k12_da_xiao_5000():
     return factory()
 
 
-def strat_3iso_dalembert():
-    """3 个孤立大 → 押小, 3 个孤立小 → 押大 + 胜负路爬楼梯。
-    计数器: big_count 从最近大大之后开始数 (单个孤立大 +1, 大大归零);
-            small_count 从最近小小之后开始数 (类似)。
-    任一计数 >= 3 → 进入对应押注模式; 直到对应方向出现"双" (大大 / 小小) 退出。
-    优先级: 大优先于小 (大计数和小计数同时达到时)。
-    """
+def make_isoN_strat(N):
+    """通用的 N 个孤立大押小 / N 个孤立小押大策略生成器。"""
     state = {"big_count": 0, "small_count": 0, "mode": None, "level": 1}
 
     def factory():
@@ -185,11 +180,11 @@ def strat_3iso_dalembert():
                     state["small_count"] += 1
             # 检查触发: 若当前 mode 为 None
             if state["mode"] is None:
-                if state["big_count"] >= 3 and state["small_count"] >= 3:
+                if state["big_count"] >= N and state["small_count"] >= N:
                     state["mode"] = "bet_small"  # 大优先
-                elif state["big_count"] >= 3:
+                elif state["big_count"] >= N:
                     state["mode"] = "bet_small"
-                elif state["small_count"] >= 3:
+                elif state["small_count"] >= N:
                     state["mode"] = "bet_big"
 
         def f(state_obj, history, draw_sum):
@@ -200,7 +195,7 @@ def strat_3iso_dalembert():
             unit = max(1, state_obj.table_init // 200)
             amt = unit * state["level"]
             amt = max(1, min(amt, state_obj.table, 12000))
-            reason = "3孤立大→押小" if side == "小" else "3孤立小→押大"
+            reason = f"{N}孤立大→押小" if side == "小" else f"{N}孤立小→押大"
             return (side, amt, reason)
 
         def update(won):
@@ -218,7 +213,19 @@ def strat_3iso_dalembert():
         f.update = update
         f.reset = reset
         return f
-    return factory()
+    return factory
+
+
+def strat_3iso_dalembert():
+    return make_isoN_strat(3)()
+
+
+def strat_4iso_dalembert():
+    return make_isoN_strat(4)()
+
+
+def strat_5iso_dalembert():
+    return make_isoN_strat(5)()
 
 
 def strat_k4_4dir_dalembert_2bet():
@@ -574,6 +581,34 @@ STRATEGIES = [
         "factory": strat_3iso_dalembert,
         "data_source": "10y",
     },
+    {
+        "id": "iso4_dalembert_1y",
+        "name": "[1年 -93%] 4孤立大押小/4孤立小押大 持续押+胜负路爬楼梯",
+        "desc": "K=4 版本。计数器:大计数从最近大大之后开始数 (单个孤立大+1, 大大→清零),小计数同理。任一 >= 4 进入对应押注 (4 孤立大→押小, 4 孤立小→押大),直到对应方向出现双(大大/小小)退出。大优先。胜负路 d'Alembert。1 年实测 $10K → $746 (-92.5%),12 爆仓,胜率 50.29%。",
+        "factory": strat_4iso_dalembert,
+        "data_source": "1y",
+    },
+    {
+        "id": "iso4_dalembert_10y",
+        "name": "[10年 破产] 4孤立大押小/4孤立小押大 持续押+胜负路爬楼梯",
+        "desc": "K=4 版本,回测过去 10 年。10 年实测 $10K → $0 (破产),47 爆仓,胜率 49.73%。",
+        "factory": strat_4iso_dalembert,
+        "data_source": "10y",
+    },
+    {
+        "id": "iso5_dalembert_1y",
+        "name": "[1年 -77%] 5孤立大押小/5孤立小押大 持续押+胜负路爬楼梯",
+        "desc": "K=5 版本。计数到 5 个孤立大才触发押小,触发更罕见但理论上信号更强。1 年实测 $10K → $2,311 (-77%),7 爆仓,胜率 50.00%。",
+        "factory": strat_5iso_dalembert,
+        "data_source": "1y",
+    },
+    {
+        "id": "iso5_dalembert_10y",
+        "name": "[10年 破产] 5孤立大押小/5孤立小押大 持续押+胜负路爬楼梯",
+        "desc": "K=5 版本,回测过去 10 年。10 年实测 $10K → $0 (破产),42 爆仓,胜率 49.48%。",
+        "factory": strat_5iso_dalembert,
+        "data_source": "10y",
+    },
 ]
 
 
@@ -770,14 +805,36 @@ def load_draws(data_source):
     return draws
 
 
+def generate_draws_index(data_source, draws):
+    """生成 draws_{source}_all.json:用紧凑数组格式存所有期开奖,按 date 索引。
+    格式: {"YYYY-MM-DD": [[issue, time, sum, bs, oe], ...]}
+    """
+    by_date = defaultdict(list)
+    for d in draws:
+        by_date[d["date"]].append([d["issue"], d["time"], d["sum"], d["bs"], d["oe"]])
+    out_path = os.path.join(OUT_DIR, f"draws_{data_source}_all.json")
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(by_date, f, ensure_ascii=False, separators=(",", ":"))
+    print(f"   生成 draws 索引: {out_path} ({os.path.getsize(out_path)/1024/1024:.1f} MB)")
+
+
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
 
     strategies_meta = []
+    draws_cache = {}  # 缓存,避免重复加载/生成
+    draws_indexed = set()  # 已生成索引的 source
+
     for st in STRATEGIES:
         data_source = st.get("data_source", "1y")
         print(f"\n>>> 跑策略: {st['name']} (data={data_source})")
-        draws = load_draws(data_source)
+        if data_source not in draws_cache:
+            draws_cache[data_source] = load_draws(data_source)
+        draws = draws_cache[data_source]
+        # 1y 才生成 draws 索引(10y/30y 太大暂不支持)
+        if data_source == "1y" and data_source not in draws_indexed:
+            generate_draws_index(data_source, draws)
+            draws_indexed.add(data_source)
         print(f"    加载 {len(draws):,} 期 ({draws[0]['date']} → {draws[-1]['date']})")
 
         # 长期回测不保留全部 trade detail
