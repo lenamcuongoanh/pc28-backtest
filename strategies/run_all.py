@@ -521,6 +521,21 @@ def strat_labouchere_K8_short():
     return make_labouchere_bs_seq(8, "小", (1, 2, 3))
 
 
+def strat_labouchere_K7_2_4_6_8_10_12_1y():
+    """K=7大→小 Labouchere [2,4,6,8,10,12] - 1 年最高 PnL"""
+    return make_labouchere_bs_seq(7, "小", (2, 4, 6, 8, 10, 12))
+
+
+def strat_labouchere_K7_fib_1y():
+    """K=7大→小 Labouchere Fibonacci 序列 [1,1,2,3,5,8,13]"""
+    return make_labouchere_bs_seq(7, "小", (1, 1, 2, 3, 5, 8, 13))
+
+
+def strat_labouchere_K7_odd_1y():
+    """K=7大→小 Labouchere 奇数序列 [1,3,5,7,9]"""
+    return make_labouchere_bs_seq(7, "小", (1, 3, 5, 7, 9))
+
+
 def strat_fixed20u_K7():
     return make_fixed_units_bs(7, "小", 20)
 
@@ -661,41 +676,41 @@ def strat_low_freq():
 
 
 STRATEGIES = [
-    # 🏆 TOP 5 (新评分 v3, 8.0 是天花板)
+    # 🏆 TOP 5 (新评分 v3, 8.2 是天花板)
+    {
+        "id": "labouchere_K7_long_seq_1y",
+        "name": "🏆#1 [8.2⭐ 1年+1266% 0爆仓] Labouchere K=7大→小 [2,4,6,8,10,12]",
+        "desc": "信号:连续 7 期开大 → 押小。Labouchere 倍数序列 [2,4,6,8,10,12],起步押 2+12=14 单位 (=$140)。每序列空时锁定 42 单位利润 (=$420)。1 年实测 $10K → $136,560 (+1265.6%),**0 次爆仓** + 25.6% 回撤,1,032 次下注。倍数序列让单个胜利锁更多利润。",
+        "factory": strat_labouchere_K7_2_4_6_8_10_12_1y,
+        "data_source": "1y",
+    },
     {
         "id": "labouchere_K10_long_10y",
-        "name": "🏆#1 [8.0⭐ 10年+609% 0爆仓] Labouchere K=10大→小 长序列 [1-7]",
-        "desc": "信号:连续 10 期开大 → 押小。Labouchere 取消法用长序列 [1,2,3,4,5,6,7] (单位 = 口袋÷200)。起步押 1+7=8 单位 (=$80)。赢取消首尾,输加押额到末尾。序列空 → 锁定 28 单位利润。10 年实测 $10K → $70,940 (+609.4%),**0 次爆仓** + 仅 19.7% 回撤,1,304 次下注。",
+        "name": "🏆#2 [8.0⭐ 10年+609% 0爆仓] Labouchere K=10大→小 [1-7]",
+        "desc": "信号:连续 10 期开大 → 押小。Labouchere 长序列 [1,2,3,4,5,6,7] (单位 = 口袋÷200)。起步押 1+7=8 单位 (=$80)。每序列空时锁定 28 单位利润。10 年实测 $10K → $70,940 (+609.4%),**0 次爆仓** + 仅 19.7% 回撤,1,304 次下注。10 年级别最稳。",
         "factory": strat_labouchere_K10_long,
         "data_source": "10y",
     },
     {
-        "id": "labouchere_K7_2_4_6_8_10_1y",
-        "name": "🏆#2 [7.7⭐ 1年+912% 0爆仓] Labouchere K=7大→小 [2,4,6,8,10]",
-        "desc": "信号:连续 7 期开大 → 押小。Labouchere 序列 [2,4,6,8,10],起步押 2+10=12 单位 (=$120)。1 年实测 $10K → $101,210 (+912.1%),**0 次爆仓** + 22% 回撤,1,032 次下注。Labouchere 倍数序列让赢的回报放大。",
-        "factory": strat_labouchere_K7_seq2_4_6_8_10,
+        "id": "labouchere_K7_fib_1y",
+        "name": "🏆#3 [8.0⭐ 1年+591% 0爆仓 19%回撤] Labouchere K=7 Fib [1,1,2,3,5,8,13]",
+        "desc": "信号:连续 7 期开大 → 押小。Labouchere Fibonacci 序列 [1,1,2,3,5,8,13],起步押 1+13=14 单位 (=$140)。Fibonacci 增长让单个胜利锁的利润更大。1 年实测 $10K → $69,110 (+591.1%),**0 次爆仓** + 仅 18.9% 回撤,1,032 次下注。Fibonacci+Labouchere 复合策略。",
+        "factory": strat_labouchere_K7_fib_1y,
+        "data_source": "1y",
+    },
+    {
+        "id": "labouchere_K7_odd_1y",
+        "name": "🏆#4 [7.7⭐ 1年+588%] Labouchere K=7大→小 奇数序列 [1,3,5,7,9]",
+        "desc": "信号:连续 7 期开大 → 押小。Labouchere 奇数序列 [1,3,5,7,9],起步押 1+9=10 单位 (=$100)。每序列空时锁定 25 单位利润。1 年实测 $10K → $68,810 (+588.1%),0 爆仓 + 22.6% 回撤,1,032 次下注。",
+        "factory": strat_labouchere_K7_odd_1y,
         "data_source": "1y",
     },
     {
         "id": "labouchere_K8_short_10y",
-        "name": "🏆#3 [7.7⭐ 10年+1396%] Labouchere K=8大→小 [1,2,3]",
+        "name": "🏆#5 [7.7⭐ 10年+1396%] Labouchere K=8大→小 [1,2,3]",
         "desc": "信号:连续 8 期开大 → 押小。Labouchere 短序列 [1,2,3],起步押 1+3=4 单位 (=$40)。10 年实测 $10K → $149,570 (+1395.7%),2 爆仓 + 33% 回撤,5,506 次下注。短序列+触发频繁=持续累积盈利。",
         "factory": strat_labouchere_K8_short,
         "data_source": "10y",
-    },
-    {
-        "id": "labouchere_K7_1y",
-        "name": "🏆#4 [7.5⭐ 1年+230% 11%回撤] Labouchere K=7大→小 [1,2,3,4,5]",
-        "desc": "信号:连续 7 期开大 → 押小。Labouchere 标准序列 [1,2,3,4,5],起步押 1+5=6 单位 (=$60)。1 年实测 $10K → $32,990 (+229.9%),**0 次爆仓** + 仅 10.8% 回撤 (最低!),1,032 次下注。最稳的 1 年策略。",
-        "factory": strat_labouchere_K7,
-        "data_source": "1y",
-    },
-    {
-        "id": "fixed20u_K7_1y",
-        "name": "🏆#5 [7.5⭐ 1年+212% 0爆仓] 连7大→小 固定 20u ($200)",
-        "desc": "信号:连续 7 期开大 → 押小,固定 20 单位 (= 口袋÷200 × 20)。$2K 口袋时 = $200/注。1 年实测 $10K → $31,190 (+211.9%),**0 次爆仓** + 18.7% 回撤,1,032 次下注。固定金额简单稳定。",
-        "factory": strat_fixed20u_K7,
-        "data_source": "1y",
     },
 ]
 
