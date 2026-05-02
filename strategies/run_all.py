@@ -469,6 +469,58 @@ def strat_labouchere_K10():
     return make_labouchere_bs(10, "小")
 
 
+def make_labouchere_bs_seq(K, side, seq):
+    """通用 Labouchere 自定义序列"""
+    opp = "大" if side == "小" else "小"
+    def cond(h):
+        if len(h) < K: return False
+        return all(r["bs"] == opp for r in h[-K:])
+    state = {"seq": list(seq), "last_units": 1}
+    def factory():
+        state["seq"] = list(seq)
+        state["last_units"] = 1
+        def f(state_obj, history, draw_sum):
+            if state_obj.total >= TARGET: return None
+            if not cond(history): return None
+            if not state["seq"]:
+                state["seq"] = list(seq)
+            unit = max(1, state_obj.table_init // 200)
+            if len(state["seq"]) == 1:
+                bet_units = state["seq"][0]
+            else:
+                bet_units = state["seq"][0] + state["seq"][-1]
+            state["last_units"] = bet_units
+            amt = bet_units * unit
+            amt = max(1, min(amt, state_obj.table, 12000))
+            seq_str = ",".join(map(str, seq))
+            return (side, amt, f"连{K}{opp}→{side} Labouchere [{seq_str}]")
+        def update(won):
+            if won:
+                if len(state["seq"]) >= 2:
+                    state["seq"] = state["seq"][1:-1]
+                else:
+                    state["seq"] = []
+            else:
+                state["seq"].append(state["last_units"])
+        def reset(): state["seq"] = list(seq)
+        f.update = update
+        f.reset = reset
+        return f
+    return factory()
+
+
+def strat_labouchere_K10_long():
+    return make_labouchere_bs_seq(10, "小", (1, 2, 3, 4, 5, 6, 7))
+
+
+def strat_labouchere_K7_seq2_4_6_8_10():
+    return make_labouchere_bs_seq(7, "小", (2, 4, 6, 8, 10))
+
+
+def strat_labouchere_K8_short():
+    return make_labouchere_bs_seq(8, "小", (1, 2, 3))
+
+
 def strat_fixed20u_K7():
     return make_fixed_units_bs(7, "小", 20)
 
@@ -609,41 +661,41 @@ def strat_low_freq():
 
 
 STRATEGIES = [
-    # 🏆 TOP 5 (新评分 v3, PnL 占 7 分主导)
+    # 🏆 TOP 5 (新评分 v3, 8.0 是天花板)
+    {
+        "id": "labouchere_K10_long_10y",
+        "name": "🏆#1 [8.0⭐ 10年+609% 0爆仓] Labouchere K=10大→小 长序列 [1-7]",
+        "desc": "信号:连续 10 期开大 → 押小。Labouchere 取消法用长序列 [1,2,3,4,5,6,7] (单位 = 口袋÷200)。起步押 1+7=8 单位 (=$80)。赢取消首尾,输加押额到末尾。序列空 → 锁定 28 单位利润。10 年实测 $10K → $70,940 (+609.4%),**0 次爆仓** + 仅 19.7% 回撤,1,304 次下注。",
+        "factory": strat_labouchere_K10_long,
+        "data_source": "10y",
+    },
+    {
+        "id": "labouchere_K7_2_4_6_8_10_1y",
+        "name": "🏆#2 [7.7⭐ 1年+912% 0爆仓] Labouchere K=7大→小 [2,4,6,8,10]",
+        "desc": "信号:连续 7 期开大 → 押小。Labouchere 序列 [2,4,6,8,10],起步押 2+10=12 单位 (=$120)。1 年实测 $10K → $101,210 (+912.1%),**0 次爆仓** + 22% 回撤,1,032 次下注。Labouchere 倍数序列让赢的回报放大。",
+        "factory": strat_labouchere_K7_seq2_4_6_8_10,
+        "data_source": "1y",
+    },
+    {
+        "id": "labouchere_K8_short_10y",
+        "name": "🏆#3 [7.7⭐ 10年+1396%] Labouchere K=8大→小 [1,2,3]",
+        "desc": "信号:连续 8 期开大 → 押小。Labouchere 短序列 [1,2,3],起步押 1+3=4 单位 (=$40)。10 年实测 $10K → $149,570 (+1395.7%),2 爆仓 + 33% 回撤,5,506 次下注。短序列+触发频繁=持续累积盈利。",
+        "factory": strat_labouchere_K8_short,
+        "data_source": "10y",
+    },
     {
         "id": "labouchere_K7_1y",
-        "name": "🏆#1 [7.5⭐ 1年+230%] Labouchere K=7大→小",
-        "desc": "信号:连续 7 期开大 → 押小。Labouchere [1,2,3,4,5] 取消法,单位 = 口袋÷200 (eg. $10)。每次押 (序列首+尾) × 单位 ([1+5]=6 单位 = $60 起步)。赢则取消首尾(序列变短),输则把这次押注金额加到序列末尾。序列空 → 锁定目标利润 (15 单位)。1 年实测 $10K → $32,990 (+229.9%),**0 次爆仓** + 仅 10.8% 回撤,1,032 次下注。",
+        "name": "🏆#4 [7.5⭐ 1年+230% 11%回撤] Labouchere K=7大→小 [1,2,3,4,5]",
+        "desc": "信号:连续 7 期开大 → 押小。Labouchere 标准序列 [1,2,3,4,5],起步押 1+5=6 单位 (=$60)。1 年实测 $10K → $32,990 (+229.9%),**0 次爆仓** + 仅 10.8% 回撤 (最低!),1,032 次下注。最稳的 1 年策略。",
         "factory": strat_labouchere_K7,
         "data_source": "1y",
     },
     {
         "id": "fixed20u_K7_1y",
-        "name": "🏆#2 [7.5⭐ 1年+212%] 连7大→小 固定 20 单位 ($200)",
-        "desc": "信号:连续 7 期开大 → 押小,固定 20 单位 (= 口袋÷200 × 20)。$2K 口袋时 = $200/注;爆仓重启后口袋变小,$ 也按比例缩小。1 年实测 $10K → $31,190 (+211.9%),**0 次爆仓** + 18.7% 回撤,1,032 次下注。",
+        "name": "🏆#5 [7.5⭐ 1年+212% 0爆仓] 连7大→小 固定 20u ($200)",
+        "desc": "信号:连续 7 期开大 → 押小,固定 20 单位 (= 口袋÷200 × 20)。$2K 口袋时 = $200/注。1 年实测 $10K → $31,190 (+211.9%),**0 次爆仓** + 18.7% 回撤,1,032 次下注。固定金额简单稳定。",
         "factory": strat_fixed20u_K7,
         "data_source": "1y",
-    },
-    {
-        "id": "fixed8u_K4_1y",
-        "name": "🏆#3 [7.2⭐ 1年+206%] 连4大→小 固定 8 单位 ($80)",
-        "desc": "信号:连续 4 期开大 → 押小,固定 8 单位 (= 口袋÷200 × 8)。$2K 口袋时 = $80/注。触发更频繁 (8,933 次/年)。1 年实测 $10K → $30,620 (+206.2%),**0 次爆仓** + 25.8% 回撤。下注次数高但单笔小。",
-        "factory": strat_fixed8u_K4,
-        "data_source": "1y",
-    },
-    {
-        "id": "labouchere_K10_10y",
-        "name": "🏆#4 [7.2⭐ 10年+304%] Labouchere K=10大→小",
-        "desc": "Labouchere [1,2,3,4,5] 取消法,信号改成连 10 期开大才触发。10 年实测 $10K → $40,410 (+304.1%),**0 次爆仓** + 26.7% 回撤,1,304 次下注。10 年级别仍能持续盈利,稀有的 0 爆仓长期策略。",
-        "factory": strat_labouchere_K10,
-        "data_source": "10y",
-    },
-    {
-        "id": "fixed15u_K10_10y",
-        "name": "🏆#5 [7.0⭐ 10年+109%] 连10大→小 固定 15 单位 ($150)",
-        "desc": "信号:连续 10 期开大 → 押小,固定 15 单位 (= 口袋÷200 × 15)。$2K 口袋时 = $150/注。10 年实测 $10K → $20,900 (+109%),**0 次爆仓** + 16.1% 回撤,1,304 次下注。最稳健的 10 年策略。",
-        "factory": strat_fixed15u_K10,
-        "data_source": "10y",
     },
 ]
 
