@@ -404,6 +404,60 @@
         "date_end": "2026-04-28",
         "total_draws": 1434916
       }
+    },
+    {
+      "id": "iso3_dalembert_1y",
+      "name": "[1年 破产] 3孤立大押小/3孤立小押大 持续押+胜负路爬楼梯",
+      "desc": "计数器:大计数从最近大大之后开始数(单个孤立大+1, 大大→清零, 类似), 小计数同理。任一 >= 3 进入对应押注 (3孤立大→押小, 3孤立小→押大),直到对应方向出现双(大大/小小)退出。大优先。胜负路 d'Alembert (起步=口袋÷200, 输+1, 赢-1, 共享 level)。期间每期都押。1 年实测 $10K → $0 (破产),49 爆仓,胜率 49.94%。",
+      "summary": {
+        "strategy_id": "iso3_dalembert_1y",
+        "start_total": 10000,
+        "end_total": 0,
+        "peak_total": 10915,
+        "pnl": -10000,
+        "pnl_pct": -100.0,
+        "peak_pct": 9.15,
+        "total_bets": 12978,
+        "total_wins": 6481,
+        "win_rate": 49.938357219910614,
+        "busts": 49,
+        "realloc": 0,
+        "target_hit": null,
+        "current_table": 0,
+        "current_reserve": 0,
+        "days": 141,
+        "data_source": "1y",
+        "date_start": "2025-04-29",
+        "date_end": "2026-04-28",
+        "total_draws": 146396
+      }
+    },
+    {
+      "id": "iso3_dalembert_10y",
+      "name": "[10年 破产] 3孤立大押小/3孤立小押大 持续押+胜负路爬楼梯",
+      "desc": "同样策略,回测过去 10 年。10 年实测 $10K → $0 (破产),45 爆仓,胜率 49.84%。",
+      "summary": {
+        "strategy_id": "iso3_dalembert_10y",
+        "start_total": 10000,
+        "end_total": 0,
+        "peak_total": 16468,
+        "pnl": -10000,
+        "pnl_pct": -100.0,
+        "peak_pct": 64.68,
+        "total_bets": 55623,
+        "total_wins": 27720,
+        "win_rate": 49.83549970336012,
+        "busts": 45,
+        "realloc": 0,
+        "target_hit": null,
+        "current_table": 0,
+        "current_reserve": 0,
+        "days": 608,
+        "data_source": "10y",
+        "date_start": "2016-04-29",
+        "date_end": "2026-04-28",
+        "total_draws": 1434916
+      }
     }
   ],
   "framework": {

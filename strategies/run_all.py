@@ -150,6 +150,77 @@ def strat_k12_da_xiao_5000():
     return factory()
 
 
+def strat_3iso_dalembert():
+    """3 个孤立大 → 押小, 3 个孤立小 → 押大 + 胜负路爬楼梯。
+    计数器: big_count 从最近大大之后开始数 (单个孤立大 +1, 大大归零);
+            small_count 从最近小小之后开始数 (类似)。
+    任一计数 >= 3 → 进入对应押注模式; 直到对应方向出现"双" (大大 / 小小) 退出。
+    优先级: 大优先于小 (大计数和小计数同时达到时)。
+    """
+    state = {"big_count": 0, "small_count": 0, "mode": None, "level": 1}
+
+    def factory():
+        state["big_count"] = 0
+        state["small_count"] = 0
+        state["mode"] = None
+        state["level"] = 1
+
+        def process_latest(history):
+            if len(history) == 0: return
+            entry = history[-1]
+            prev = history[-2] if len(history) >= 2 else None
+            if entry["bs"] == "大":
+                if prev and prev["bs"] == "大":
+                    state["big_count"] = 0
+                    if state["mode"] == "bet_small":
+                        state["mode"] = None
+                else:
+                    state["big_count"] += 1
+            elif entry["bs"] == "小":
+                if prev and prev["bs"] == "小":
+                    state["small_count"] = 0
+                    if state["mode"] == "bet_big":
+                        state["mode"] = None
+                else:
+                    state["small_count"] += 1
+            # 检查触发: 若当前 mode 为 None
+            if state["mode"] is None:
+                if state["big_count"] >= 3 and state["small_count"] >= 3:
+                    state["mode"] = "bet_small"  # 大优先
+                elif state["big_count"] >= 3:
+                    state["mode"] = "bet_small"
+                elif state["small_count"] >= 3:
+                    state["mode"] = "bet_big"
+
+        def f(state_obj, history, draw_sum):
+            if state_obj.total >= TARGET: return None
+            process_latest(history)
+            if state["mode"] is None: return None
+            side = "小" if state["mode"] == "bet_small" else "大"
+            unit = max(1, state_obj.table_init // 200)
+            amt = unit * state["level"]
+            amt = max(1, min(amt, state_obj.table, 12000))
+            reason = "3孤立大→押小" if side == "小" else "3孤立小→押大"
+            return (side, amt, reason)
+
+        def update(won):
+            if won:
+                state["level"] = max(1, state["level"] - 1)
+            else:
+                state["level"] += 1
+
+        def reset():
+            state["big_count"] = 0
+            state["small_count"] = 0
+            state["mode"] = None
+            state["level"] = 1
+
+        f.update = update
+        f.reset = reset
+        return f
+    return factory()
+
+
 def strat_k4_4dir_dalembert_2bet():
     """恰好连 4 同色 4向 → 反向押,最多 2 次 (赢则停),胜负路爬楼梯。
     触发: 最近 4 期同色 AND 第 5 期不同色,优先级 大>小>单>双。
@@ -487,6 +558,20 @@ STRATEGIES = [
         "name": "[10年 破产] 恰好连4同色4向 反向2注(赢即停) 胜负路爬楼梯",
         "desc": "同样策略,回测过去 10 年。10 年实测 $10K → $0 (破产),45 爆仓,峰值 $10,722。",
         "factory": strat_k4_4dir_dalembert_2bet,
+        "data_source": "10y",
+    },
+    {
+        "id": "iso3_dalembert_1y",
+        "name": "[1年 破产] 3孤立大押小/3孤立小押大 持续押+胜负路爬楼梯",
+        "desc": "计数器:大计数从最近大大之后开始数(单个孤立大+1, 大大→清零, 类似), 小计数同理。任一 >= 3 进入对应押注 (3孤立大→押小, 3孤立小→押大),直到对应方向出现双(大大/小小)退出。大优先。胜负路 d'Alembert (起步=口袋÷200, 输+1, 赢-1, 共享 level)。期间每期都押。1 年实测 $10K → $0 (破产),49 爆仓,胜率 49.94%。",
+        "factory": strat_3iso_dalembert,
+        "data_source": "1y",
+    },
+    {
+        "id": "iso3_dalembert_10y",
+        "name": "[10年 破产] 3孤立大押小/3孤立小押大 持续押+胜负路爬楼梯",
+        "desc": "同样策略,回测过去 10 年。10 年实测 $10K → $0 (破产),45 爆仓,胜率 49.84%。",
+        "factory": strat_3iso_dalembert,
         "data_source": "10y",
     },
 ]
