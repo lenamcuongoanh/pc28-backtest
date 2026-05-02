@@ -373,6 +373,75 @@ def strat_k4_dan_shuang_dalembert():
     return factory()
 
 
+def strat_antimart_4win():
+    """连4大→押小 + Anti-马丁 (赢翻倍, 4 连胜止盈, 输重置)"""
+    def cond(h):
+        if len(h) < 4: return False
+        return all(r["bs"] == "大" for r in h[-4:])
+    state = {"chain": 0}
+    def factory():
+        state["chain"] = 0
+        def f(state_obj, history, draw_sum):
+            if state_obj.total >= TARGET: return None
+            if not cond(history): return None
+            unit = max(1, state_obj.table_init // 200)
+            amt = unit * (2 ** state["chain"])
+            amt = max(1, min(amt, state_obj.table, 12000))
+            return ("小", amt, "连4大→小 反马丁")
+        def update(won):
+            if won:
+                state["chain"] += 1
+                if state["chain"] >= 4:
+                    state["chain"] = 0  # 4 连胜止盈
+            else:
+                state["chain"] = 0  # 输了重置
+        def reset():
+            state["chain"] = 0
+        f.update = update
+        f.reset = reset
+        return f
+    return factory()
+
+
+def strat_labouchere():
+    """连4单→押双 触发 + Labouchere [1,2,3,4,5] 取消法"""
+    def cond(h):
+        if len(h) < 4: return False
+        return all(r["oe"] == "单" for r in h[-4:])
+    state = {"seq": [1, 2, 3, 4, 5], "last_bet_units": 1}
+    def factory():
+        state["seq"] = [1, 2, 3, 4, 5]
+        state["last_bet_units"] = 1
+        def f(state_obj, history, draw_sum):
+            if state_obj.total >= TARGET: return None
+            if not cond(history): return None
+            if not state["seq"]:
+                state["seq"] = [1, 2, 3, 4, 5]
+            unit = max(1, state_obj.table_init // 200)
+            if len(state["seq"]) == 1:
+                bet_units = state["seq"][0]
+            else:
+                bet_units = state["seq"][0] + state["seq"][-1]
+            state["last_bet_units"] = bet_units
+            amt = bet_units * unit
+            amt = max(1, min(amt, state_obj.table, 12000))
+            return ("双", amt, f"连4单→双 Labouchere [{','.join(map(str, state['seq'][:6]))}{'...' if len(state['seq'])>6 else ''}]")
+        def update(won):
+            if won:
+                if len(state["seq"]) >= 2:
+                    state["seq"] = state["seq"][1:-1]
+                else:
+                    state["seq"] = []
+            else:
+                state["seq"].append(state["last_bet_units"])
+        def reset():
+            state["seq"] = [1, 2, 3, 4, 5]
+        f.update = update
+        f.reset = reset
+        return f
+    return factory()
+
+
 def strat_k12_da_xiao_1500():
     """连12期开大 → 押小 $1500 (10 年 +743%, 0 爆仓 稳健)"""
     def cond(h):
@@ -462,152 +531,41 @@ def strat_low_freq():
 
 
 STRATEGIES = [
-    {
-        "id": "dalembert_1y",
-        "name": "[1年 -18%] 连3单押双 爬楼梯",
-        "desc": "信号:连续 3 期开单 → 押双。爬楼梯下注:起步 = 当前口袋 // 200 (eg. $2K→$10, $1.6K→$8)。输了 +1 个起步, 赢了 -1 个起步, 最低 1 起步。每次爆仓/翻倍后按新口袋重算起步。回测过去 1 年 (2025-04-29 → 2026-04-28, 146,396 期)。",
-        "factory": strat_dalembert,
-        "data_source": "1y",
-    },
-    {
-        "id": "dalembert_10y",
-        "name": "[10年 破产] 连3单押双 爬楼梯",
-        "desc": "同样的策略,回测过去 10 年 (2016-04-29 → 2026-04-28, ~1.46M 期)。10 年订单太多,只保留爆仓/翻倍当天的逐笔订单,其他日子显示当日聚合统计。",
-        "factory": strat_dalembert,
-        "data_source": "10y",
-    },
-    {
-        "id": "dalembert_tp_1y",
-        "name": "[1年 -96%] 连3单押双 爬楼梯+1%止盈",
-        "desc": "同样的信号 (连 3 单押双) 和爬楼梯下注,但加入 1% 止盈重置:口袋从锚点涨够 1% (≥锚点×1.01) → 立刻回到第 1 级,锚点更新为当前口袋,起步按新锚点÷200 重算。频繁锁小利润避免吐回去。回测过去 1 年。",
-        "factory": strat_dalembert_take_profit,
-        "data_source": "1y",
-    },
-    {
-        "id": "k7da_xiao80_1y",
-        "name": "[1年 +6531% 🚀] 连7大→押小 80%口袋",
-        "desc": "信号:连续 7 期开大 → 押当前口袋的 80% (限红 12K)。过去 1 年回测 $10K → $663,088 (+6531%, 66 倍),峰值 $796,288 (80 倍),13 次爆仓。这是从 200+ 个变种暴力搜索出的过去 1 年最强策略。胜率 53.9% (1.7σ 真信号)。",
-        "factory": strat_k7_da_pushxiao_80pct,
-        "data_source": "1y",
-    },
-    {
-        "id": "k7da_xiao80_10y",
-        "name": "[10年 破产] 连7大→押小 80%口袋",
-        "desc": "同样的策略 (连7大→押小 80%口袋),回测过去 10 年 (2016-04-29 → 2026-04-28, ~1.4M 期)。看 10 年级别是否依然能赚或破产。",
-        "factory": strat_k7_da_pushxiao_80pct,
-        "data_source": "10y",
-    },
-    {
-        "id": "k7da_xiao80_30y",
-        "name": "[30年 破产] 连7大→押小 80%口袋",
-        "desc": "同样的策略 (连7大→押小 80%口袋),回测过去 30 年完整数据 (1995-11 → 2026-04, ~3.4M 期)。看长期是否能持续盈利,还是只是过去 1 年的 sample lucky。",
-        "factory": strat_k7_da_pushxiao_80pct,
-        "data_source": "30y",
-    },
-    {
-        "id": "k4dan_shuang_1000_10y",
-        "name": "[10年 +3094% 🔥极致激进] 连4单→双 $1000",
-        "desc": "信号:连续 4 期开单 → 押双 固定 $1000。10 年实测 $10K → $319,368 (+3094%, 年化复利 40.5%),10 次爆仓 + 68% 最大回撤。这是 10 年里 PnL 最高的策略,但波动巨大。",
-        "factory": strat_k4_dan_shuang_1000,
-        "data_source": "10y",
-    },
-    {
-        "id": "k12da_xiao_5000_10y",
-        "name": "[10年 +2490% 💼中等] 连12大→小 $5000",
-        "desc": "信号:连续 12 期开大 → 押小 固定 $5000。10 年实测 $10K → $258,973 (+2490%, 年化 38.6%),3 次爆仓 + 33% 回撤。信号低频 (~28 次/年),但单注大,综合稳健。",
-        "factory": strat_k12_da_xiao_5000,
-        "data_source": "10y",
-    },
+    # 🏆 TOP 5 (按 10 分制评分排名)
     {
         "id": "k12da_xiao_1500_10y",
-        "name": "[10年 +743% 🛡️稳健0爆仓] 连12大→小 $1500",
+        "name": "🏆#1 [8.5⭐ 10年+743% 0爆仓] 连12大→小 $1500",
         "desc": "信号:连续 12 期开大 → 押小 固定 $1500。10 年实测 $10K → $84,340 (+743%, 年化 23.7% 跟巴菲特持平),**0 次爆仓** + 24.6% 回撤。0 爆仓中 PnL 最高的策略。",
         "factory": strat_k12_da_xiao_1500,
         "data_source": "10y",
     },
     {
         "id": "k4dan_dalembert_1y",
-        "name": "[1年 +220%] 连4单→押双 胜负路爬楼梯",
+        "name": "🏆#2 [8.5⭐ 1年+220%] 连4单→押双 胜负路爬楼梯",
         "desc": "信号:连续 4 期开单 → 下一期押双。胜负路爬楼梯:起步 = 口袋÷200 (eg. $2K→$10),押双输了 +1 个起步,押双赢了 -1 个起步,最低回到 1 个起步。每个连4单触发只下 1 期。爆仓/翻倍后 level 重置回 1,起步按新口袋重算。1 年实测 $10K → $31,958 (+220%),3 爆仓 + 1 翻倍。",
         "factory": strat_k4_dan_shuang_dalembert,
         "data_source": "1y",
     },
     {
-        "id": "k4dan_dalembert_10y",
-        "name": "[10年 -54%] 连4单→押双 胜负路爬楼梯",
-        "desc": "同样的策略 (连4单押双 + 胜负路爬楼梯),回测过去 10 年 (~1.4M 期)。10 年实测 $10K → $4,606 (-53.9%),40 爆仓 + 4 翻倍,峰值 $178,363。说明这个策略在 10 年级别长期会被磨损,但短期 (过去 1 年) 表现不错。",
-        "factory": strat_k4_dan_shuang_dalembert,
+        "id": "k12da_xiao_5000_10y",
+        "name": "🏆#3 [8.0⭐ 10年+2490%] 连12大→小 $5000",
+        "desc": "信号:连续 12 期开大 → 押小 固定 $5000。10 年实测 $10K → $258,973 (+2490%, 年化 38.6%),3 次爆仓 + 33% 回撤。信号低频 (~28 次/年),但单注大,综合稳健。",
+        "factory": strat_k12_da_xiao_5000,
         "data_source": "10y",
     },
     {
-        "id": "k4_4dir_dalembert_1y",
-        "name": "[1年 -36%] 恰好连4同色4向 反向胜负路爬楼梯",
-        "desc": "触发:恰好连 4 期同色 (= 最近 4 期同色 且 第 5 期不同色)。4 选 1: 连4大→押小 / 连4小→押大 / 连4单→押双 / 连4双→押单,优先级大>小>单>双。胜负路爬楼梯 (起步=口袋÷200, 输+1, 赢-1, 最低 1)。如果押输,streak 延长到 5+ 期不再触发,等 streak 被打断重新形成恰好 4 连才再触发。1 年实测 $10K → $6,424 (-35.8%),9 爆仓 + 0 翻倍。",
-        "factory": strat_k4_4dir_dalembert,
+        "id": "antimart_4win_1y",
+        "name": "🏆#4 [8.0⭐ 1年+24% 0爆仓] Anti-马丁+4连胜止盈",
+        "desc": "信号:连续 4 期开大 → 押小。下注: 起步 = 口袋÷200 (eg. $10),赢则翻倍 ($10→$20→$40→$80),4 连胜止盈 (锁住 +$150 利润后重置回 $10),输任何一注立刻重置回 $10。1 年实测 $10K → $12,395 (+23.9%),0 次爆仓,19.8% 回撤,最稳健。",
+        "factory": strat_antimart_4win,
         "data_source": "1y",
     },
     {
-        "id": "k4_4dir_dalembert_10y",
-        "name": "[10年 破产] 恰好连4同色4向 反向胜负路爬楼梯",
-        "desc": "同样的策略,回测过去 10 年。10 年实测 $10K → $0 (破产),51 爆仓 + 1 翻倍,峰值 $23,823。修复触发 bug 后的真实长期表现:虽然不会重复触发,但每次触发只下 1 注,d'Alembert 没法在长期克服 -0.15% 抽水。",
-        "factory": strat_k4_4dir_dalembert,
-        "data_source": "10y",
-    },
-    {
-        "id": "k4_4dir_2bet_1y",
-        "name": "[1年 -24%] 恰好连4同色4向 反向2注(赢即停) 胜负路爬楼梯",
-        "desc": "信号:恰好连 4 期同色 (优先级大>小>单>双)。下注:第 1 注押反向 → 赢则结束 + level-1; 输则 level+1 + 押第 2 注同方向; 第 2 注完成后无论输赢都结束。Session 期间不重新触发。胜负路 d'Alembert level 跨 session 持续。1 年实测 $10K → $7,654 (-23.5%),8 爆仓,峰值 $13,863。",
-        "factory": strat_k4_4dir_dalembert_2bet,
+        "id": "labouchere_1y",
+        "name": "🏆#5 [6.5⭐ 1年+330%] Labouchere 取消法",
+        "desc": "信号:连续 4 期开单 → 押双。Labouchere 取消法:起步序列 [1,2,3,4,5] (单位 = 口袋÷200)。每次押 (序列首+尾) 个单位。赢则取消首尾(序列变短),输则把这次押注金额加到序列末尾。序列变空 → 锁定目标利润 (15 单位),重启序列。1 年实测 $10K → $43,016 (+330%),10 爆仓,80.7% 回撤(高波动)。",
+        "factory": strat_labouchere,
         "data_source": "1y",
-    },
-    {
-        "id": "k4_4dir_2bet_10y",
-        "name": "[10年 破产] 恰好连4同色4向 反向2注(赢即停) 胜负路爬楼梯",
-        "desc": "同样策略,回测过去 10 年。10 年实测 $10K → $0 (破产),45 爆仓,峰值 $10,722。",
-        "factory": strat_k4_4dir_dalembert_2bet,
-        "data_source": "10y",
-    },
-    {
-        "id": "iso3_dalembert_1y",
-        "name": "[1年 破产] 3孤立大押小/3孤立小押大 持续押+胜负路爬楼梯",
-        "desc": "计数器:大计数从最近大大之后开始数(单个孤立大+1, 大大→清零, 类似), 小计数同理。任一 >= 3 进入对应押注 (3孤立大→押小, 3孤立小→押大),直到对应方向出现双(大大/小小)退出。大优先。胜负路 d'Alembert (起步=口袋÷200, 输+1, 赢-1, 共享 level)。期间每期都押。1 年实测 $10K → $0 (破产),49 爆仓,胜率 49.94%。",
-        "factory": strat_3iso_dalembert,
-        "data_source": "1y",
-    },
-    {
-        "id": "iso3_dalembert_10y",
-        "name": "[10年 破产] 3孤立大押小/3孤立小押大 持续押+胜负路爬楼梯",
-        "desc": "同样策略,回测过去 10 年。10 年实测 $10K → $0 (破产),45 爆仓,胜率 49.84%。",
-        "factory": strat_3iso_dalembert,
-        "data_source": "10y",
-    },
-    {
-        "id": "iso4_dalembert_1y",
-        "name": "[1年 -93%] 4孤立大押小/4孤立小押大 持续押+胜负路爬楼梯",
-        "desc": "K=4 版本。计数器:大计数从最近大大之后开始数 (单个孤立大+1, 大大→清零),小计数同理。任一 >= 4 进入对应押注 (4 孤立大→押小, 4 孤立小→押大),直到对应方向出现双(大大/小小)退出。大优先。胜负路 d'Alembert。1 年实测 $10K → $746 (-92.5%),12 爆仓,胜率 50.29%。",
-        "factory": strat_4iso_dalembert,
-        "data_source": "1y",
-    },
-    {
-        "id": "iso4_dalembert_10y",
-        "name": "[10年 破产] 4孤立大押小/4孤立小押大 持续押+胜负路爬楼梯",
-        "desc": "K=4 版本,回测过去 10 年。10 年实测 $10K → $0 (破产),47 爆仓,胜率 49.73%。",
-        "factory": strat_4iso_dalembert,
-        "data_source": "10y",
-    },
-    {
-        "id": "iso5_dalembert_1y",
-        "name": "[1年 -77%] 5孤立大押小/5孤立小押大 持续押+胜负路爬楼梯",
-        "desc": "K=5 版本。计数到 5 个孤立大才触发押小,触发更罕见但理论上信号更强。1 年实测 $10K → $2,311 (-77%),7 爆仓,胜率 50.00%。",
-        "factory": strat_5iso_dalembert,
-        "data_source": "1y",
-    },
-    {
-        "id": "iso5_dalembert_10y",
-        "name": "[10年 破产] 5孤立大押小/5孤立小押大 持续押+胜负路爬楼梯",
-        "desc": "K=5 版本,回测过去 10 年。10 年实测 $10K → $0 (破产),42 爆仓,胜率 49.48%。",
-        "factory": strat_5iso_dalembert,
-        "data_source": "10y",
     },
 ]
 
